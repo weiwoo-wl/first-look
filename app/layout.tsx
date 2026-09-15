@@ -8,8 +8,8 @@ export const metadata: Metadata = {
     "codex-preview": "development",
   },
   icons: {
-    icon: "/koi-logo.svg",
-    shortcut: "/koi-logo.svg",
+    icon: "/koi-logo.png",
+    shortcut: "/koi-logo.png",
   },
 };
 
