@@ -53,7 +53,30 @@ export default function Home() {
     const matchesType = activeType === "全部" || item.type.includes(activeType);
     const matchesQuery = !query || `${item.title} ${item.description} ${item.maker}`.toLowerCase().includes(query.toLowerCase());
     return matchesType && matchesQuery;
-  }), [activeType, query]);
+  }), [items, activeType, query]);
+
+  useEffect(() => {
+    fetch("/api/creations")
+      .then((response) => response.ok ? response.json() as Promise<Array<{ title: string; description: string; type: string; creatorName: string; likes?: number; comments?: number }>> : [])
+      .then((remote) => {
+        if (!remote.length) return;
+        setItems((current) => {
+          const remoteItems = remote.map((item) => ({
+            title: item.title,
+            description: item.description,
+            maker: item.creatorName,
+            type: item.type,
+            color: "from-[#f2d9c7] to-[#d6a984]",
+            likes: item.likes || 0,
+            comments: item.comments || 0,
+            badge: "刚刚发布",
+          }));
+          const titles = new Set(remoteItems.map((item) => item.title));
+          return [...remoteItems, ...current.filter((item) => !titles.has(item.title))];
+        });
+      })
+      .catch(() => undefined);
+  }, []);
 
   function toggleLike(title: string) {
     setLiked((current) => current.includes(title) ? current.filter((item) => item !== title) : [...current, title]);
