@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "First Look — AI 创造，值得被看见",
-  description: "发现正在被创造的 AI 产品。",
+  description: "让每一个用 AI 创造的产品，尤其是非专业创造者的产品，都有被发现的机会。",
   other: {
     "codex-preview": "development",
   },

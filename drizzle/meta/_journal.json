@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1789528007230,
+      "tag": "0000_outstanding_fabian_cortez",
+      "breakpoints": true
+    }
+  ]
 }
