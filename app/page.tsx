@@ -26,6 +26,18 @@ export default function Home() {
   const [liked, setLiked] = useState<string[]>([]);
 
   useEffect(() => {
+    function routePublish(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      const link = target.closest('a[href="/create"]');
+      if (!link) return;
+      event.preventDefault();
+      window.location.assign("/create");
+    }
+    document.addEventListener("click", routePublish, true);
+    return () => document.removeEventListener("click", routePublish, true);
+  }, []);
+
+  useEffect(() => {
     const saved = window.localStorage.getItem("first-look-creations");
     if (saved) {
       const parsed = JSON.parse(saved) as Creation[];
