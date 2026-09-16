@@ -15,6 +15,7 @@ export default function CreatePage() {
   const [status, setStatus] = useState("早期测试");
   const [fileName, setFileName] = useState("");
   const [preview, setPreview] = useState("");
+  const [error, setError] = useState("");
 
   function chooseFile(file?: File) {
     if (!file) return;
@@ -28,6 +29,7 @@ export default function CreatePage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
     const formTitle = (event.currentTarget.querySelector("input") as HTMLInputElement)?.value || title;
     const formDescription = (event.currentTarget.querySelector("textarea") as HTMLTextAreaElement)?.value || description;
     const item = { title: formTitle, description: formDescription, maker: "我", type, status, story, preview, visibility: "published", color: "from-[#f2d9c7] to-[#d6a984]", likes: 0, comments: 0, badge: "刚刚发布" };
@@ -38,10 +40,6 @@ export default function CreatePage() {
       const timeout = window.setTimeout(() => controller.abort(), 1500);
       const response = await fetch("/api/creations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: formTitle, description: formDescription, type, status, story }), signal: controller.signal });
       window.clearTimeout(timeout);
-      if (response.status === 401) {
-        window.location.href = "/signin-with-chatgpt?return_to=%2Fcreate";
-        return;
-      }
       if (response.ok) {
         const creation = await response.json() as { slug?: string };
         if (creation.slug) {
@@ -49,7 +47,10 @@ export default function CreatePage() {
           return;
         }
       }
-    } catch { /* Local preview can continue without a D1 binding. */ }
+    } catch {
+      setError("发布暂时失败，请确认已经登录后再试。");
+      return;
+    }
     window.location.href = `/?published=${encodeURIComponent(formTitle)}`;
   }
 
