@@ -8,11 +8,12 @@ export async function GET(request: Request) {
     const session = await config.DB.prepare("SELECT display_name, github_login FROM sessions WHERE id = ? AND expires_at > ?").bind(id, new Date().toISOString()).first();
     return Response.json({ user: session }, { headers: { "Cache-Control": "no-store" } });
   }
-  if (!config.GITHUB_CLIENT_ID) return new Response("登录配置尚未完成", { status: 503 });
+  const clientId = config.GITHUB_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
+  if (!clientId) return new Response("登录配置尚未完成", { status: 503 });
   const origin = new URL(request.url).origin;
   const state = crypto.randomUUID();
   const target = new URL("https://github.com/login/oauth/authorize");
-  target.searchParams.set("client_id", config.GITHUB_CLIENT_ID);
+  target.searchParams.set("client_id", clientId);
   target.searchParams.set("redirect_uri", `${origin}/api/auth/github/callback`);
   target.searchParams.set("state", state);
   return new Response(null, { status: 302, headers: {

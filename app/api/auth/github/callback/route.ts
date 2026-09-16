@@ -1,7 +1,9 @@
 import { env } from "cloudflare:workers";
 
 export async function GET(request: Request) {
-  const config = env as unknown as { GITHUB_CLIENT_ID?: string; GITHUB_CLIENT_SECRET?: string; DB?: D1Database };
+  const config = { ...env } as unknown as { GITHUB_CLIENT_ID?: string; GITHUB_CLIENT_SECRET?: string; DB?: D1Database };
+  config.GITHUB_CLIENT_ID ||= process.env.GITHUB_CLIENT_ID;
+  config.GITHUB_CLIENT_SECRET ||= process.env.GITHUB_CLIENT_SECRET;
   const url = new URL(request.url);
   const state = url.searchParams.get("state");
   const expected = (request.headers.get("Cookie") || "").match(/(?:^|;\s*)__Host-first_look_oauth=([^;]+)/)?.[1];
