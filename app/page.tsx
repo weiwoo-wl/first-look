@@ -24,6 +24,11 @@ export default function Home() {
   const [activeType, setActiveType] = useState("全部");
   const [query, setQuery] = useState("");
   const [liked, setLiked] = useState<string[]>([]);
+  const [user, setUser] = useState<{ display_name: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/github?session=1").then((response) => response.ok ? response.json() as Promise<{ user: { display_name: string } | null }> : { user: null }).then((data) => setUser(data.user)).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     function routePublish(event: MouseEvent) {
@@ -35,18 +40,6 @@ export default function Home() {
     }
     document.addEventListener("click", routePublish, true);
     return () => document.removeEventListener("click", routePublish, true);
-  }, []);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("first-look-creations");
-    if (saved) {
-      const parsed = JSON.parse(saved) as Creation[];
-      const unique = parsed.filter((item, index, list) => list.findIndex((candidate) => candidate.title === item.title) === index);
-      window.localStorage.setItem("first-look-creations", JSON.stringify(unique));
-      setItems([...unique, ...creations]);
-    }
-    const published = new URLSearchParams(window.location.search).get("published");
-    if (published) setItems((current) => [{ title: published, description: "刚刚发布的 First Look 作品。", maker: "我", type: "其他", color: "from-[#f2d9c7] to-[#d6a984]", likes: 0, comments: 0, badge: "刚刚发布" }, ...current]);
   }, []);
 
   const visibleCreations = useMemo(() => items.filter((item) => {
@@ -98,7 +91,7 @@ export default function Home() {
             <label className="hidden items-center gap-2 rounded-full border border-black/12 bg-white px-3 py-2 text-sm text-black/45 sm:flex">
               <Search size={15} aria-hidden="true" /><span className="sr-only">搜索作品</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索作品" className="w-28 bg-transparent outline-none placeholder:text-black/35" />
             </label>
-            <a href="/api/auth/github" className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-white">登录</a>
+            {user ? <button onClick={async () => { await fetch("/api/auth/github", { method: "DELETE" }); window.location.reload(); }} className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium" title="点击退出登录">{user.display_name} · 退出</button> : <a href="/api/auth/github" className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-white">登录</a>}
             <Link href="/create" className="flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#333]"><Sparkles size={14} aria-hidden="true" />发布作品</Link>
           </div>
         </div>
