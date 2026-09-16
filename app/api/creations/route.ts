@@ -15,6 +15,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
   }
 
+  const existing = await db.select({ id: creations.id }).from(creations).where(eq(creations.title, body.title.trim())).limit(1);
+  if (existing.length) return Response.json({ error: "这个作品已经发布过了" }, { status: 409 });
+
   const slug = `${body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
   const [creation] = await db.insert(creations).values({
     slug, title: body.title.trim(), description: body.description.trim(), type: body.type,

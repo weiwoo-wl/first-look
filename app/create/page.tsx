@@ -40,6 +40,7 @@ export default function CreatePage() {
       const timeout = window.setTimeout(() => controller.abort(), 1500);
       const response = await fetch("/api/creations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: formTitle, description: formDescription, type, status, story }), signal: controller.signal });
       window.clearTimeout(timeout);
+      if (response.status === 409) { window.alert("这个作品已经发布过了，请换一个作品名称。"); return; }
       if (response.ok) {
         const creation = await response.json() as { slug?: string };
         if (creation.slug) {
