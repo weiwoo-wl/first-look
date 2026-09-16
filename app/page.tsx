@@ -98,7 +98,7 @@ export default function Home() {
             <label className="hidden items-center gap-2 rounded-full border border-black/12 bg-white px-3 py-2 text-sm text-black/45 sm:flex">
               <Search size={15} aria-hidden="true" /><span className="sr-only">搜索作品</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索作品" className="w-28 bg-transparent outline-none placeholder:text-black/35" />
             </label>
-            <button className="hidden rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-white sm:block">登录</button>
+            <a href="/api/auth/github" className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-white">登录</a>
             <Link href="/create" className="flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#333]"><Sparkles size={14} aria-hidden="true" />发布作品</Link>
           </div>
         </div>

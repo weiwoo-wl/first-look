@@ -32,27 +32,25 @@ export default function CreatePage() {
     setError("");
     const formTitle = (event.currentTarget.querySelector("input") as HTMLInputElement)?.value || title;
     const formDescription = (event.currentTarget.querySelector("textarea") as HTMLTextAreaElement)?.value || description;
-    const item = { title: formTitle, description: formDescription, maker: "我", type, status, story, preview, visibility: "published", color: "from-[#f2d9c7] to-[#d6a984]", likes: 0, comments: 0, badge: "刚刚发布" };
-    const saved = JSON.parse(window.localStorage.getItem("first-look-creations") || "[]");
-    window.localStorage.setItem("first-look-creations", JSON.stringify([item, ...saved]));
     try {
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 1500);
+      const timeout = window.setTimeout(() => controller.abort(), 20000);
       const response = await fetch("/api/creations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: formTitle, description: formDescription, type, status, story }), signal: controller.signal });
       window.clearTimeout(timeout);
       if (response.status === 409) { window.alert("这个作品已经发布过了，请换一个作品名称。"); return; }
+      if (response.status === 401) { window.location.assign("/api/auth/github"); return; }
       if (response.ok) {
         const creation = await response.json() as { slug?: string };
         if (creation.slug) {
-          window.location.href = `/?published=${encodeURIComponent(formTitle)}`;
+          window.location.href = "/";
           return;
         }
       }
     } catch {
-      setError("发布暂时失败，请确认已经登录后再试。");
+      window.alert("发布暂时失败，请稍后再试。");
       return;
     }
-    window.location.href = `/?published=${encodeURIComponent(formTitle)}`;
+    window.alert("发布未成功，请稍后重试。作品没有保存。");
   }
 
   return (

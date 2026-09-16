@@ -30,3 +30,12 @@ export const creationShares = sqliteTable("creation_shares", {
   source: text("source").notNull().default("copy-link"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  githubId: text("github_id").notNull(),
+  githubLogin: text("github_login").notNull(),
+  displayName: text("display_name").notNull(),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: text("expires_at").notNull(),
+});
