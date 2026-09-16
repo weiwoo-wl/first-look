@@ -9,6 +9,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const db = getDb();
   const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; mediaKey?: string; mediaType?: string };
   if (!body.title?.trim() || !body.description?.trim() || !body.type?.trim()) {
     return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
