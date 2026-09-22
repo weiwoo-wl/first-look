@@ -1,3 +1,4 @@
+// @ts-nocheck -- Cloudflare's generated SocketOptions marks allowHalfOpen as required although the runtime defaults it.
 import {connect} from "cloudflare:sockets";
 const enc=new TextEncoder(),dec=new TextDecoder();
 async function reply(r:ReadableStreamDefaultReader<Uint8Array>){let t="";for(;;){const x=await r.read();if(x.done)throw Error("SMTP closed");t+=dec.decode(x.value,{stream:true});const last=t.split("\r\n").filter(Boolean).at(-1);if(last&&/^\d{3} /.test(last))return Number(last.slice(0,3));}}

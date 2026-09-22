@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 export type SiteUser={id:string;email:string;displayName:string};
-export const runtime=()=>env as unknown as {DB?:D1Database;SMTP_PASSWORD?:string};
+export const runtime=()=>env as unknown as {DB?:D1Database;MEDIA?:R2Bucket;SMTP_PASSWORD?:string};
 export async function ensureAuthTables(db:D1Database){await db.batch([db.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,display_name TEXT NOT NULL,terms_version TEXT NOT NULL,terms_accepted_at TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),db.prepare("CREATE TABLE IF NOT EXISTS email_challenges (id TEXT PRIMARY KEY,email TEXT NOT NULL,code_hash TEXT NOT NULL,expires_at TEXT NOT NULL,attempts INTEGER DEFAULT 0 NOT NULL,consumed_at TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),db.prepare("CREATE TABLE IF NOT EXISTS user_sessions (token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires_at TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)")]);}
 export async function sha256(v:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("");}
 export function normalizeEmail(v:unknown){const e=String(v||"").trim().toLowerCase();return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)&&e.length<=254?e:null;}
