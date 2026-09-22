@@ -27,7 +27,7 @@ export default function Home() {
   const [user, setUser] = useState<{ display_name: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/github?session=1").then((response) => response.ok ? response.json() as Promise<{ user: { display_name: string } | null }> : { user: null }).then((data) => setUser(data.user)).catch(() => undefined);
+    fetch("/api/auth/session").then((response) => response.ok ? response.json() as Promise<{ user: { displayName: string } | null }> : { user: null }).then((data) => setUser(data.user ? { display_name: data.user.displayName } : null)).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function Home() {
             <label className="hidden items-center gap-2 rounded-full border border-black/12 bg-white px-3 py-2 text-sm text-black/45 sm:flex">
               <Search size={15} aria-hidden="true" /><span className="sr-only">搜索作品</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索作品" className="w-28 bg-transparent outline-none placeholder:text-black/35" />
             </label>
-            {user ? <button onClick={async () => { await fetch("/api/auth/github", { method: "DELETE" }); window.location.reload(); }} className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium" title="点击退出登录">{user.display_name} · 退出</button> : <a href="/api/auth/github" className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-white">登录</a>}
+            {user ? <button onClick={async () => { await fetch("/api/auth/session", { method: "DELETE" }); window.location.reload(); }} className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium" title="点击退出登录">{user.display_name} · 退出</button> : <a href="/login" className="rounded-full border border-black/15 px-4 py-2 text-sm font-medium transition hover:bg-white">注册／登录</a>}
             <Link href="/create" className="flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#333]"><Sparkles size={14} aria-hidden="true" />发布作品</Link>
           </div>
         </div>

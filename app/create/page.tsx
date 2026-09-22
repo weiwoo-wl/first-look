@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, Upload } from "lucide-react";
 
 const types = ["工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "文本", "实验", "其他"];
@@ -16,6 +16,17 @@ export default function CreatePage() {
   const [fileName, setFileName] = useState("");
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("first-look-draft");
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw) as { title?: string; description?: string; story?: string; type?: string; status?: string };
+      setTitle(draft.title || ""); setDescription(draft.description || ""); setStory(draft.story || "");
+      if (draft.type) setType(draft.type); if (draft.status) setStatus(draft.status);
+      sessionStorage.removeItem("first-look-draft");
+    } catch { sessionStorage.removeItem("first-look-draft"); }
+  }, []);
 
   function chooseFile(file?: File) {
     if (!file) return;
@@ -38,7 +49,7 @@ export default function CreatePage() {
       const response = await fetch("/api/creations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: formTitle, description: formDescription, type, status, story }), signal: controller.signal });
       window.clearTimeout(timeout);
       if (response.status === 409) { window.alert("这个作品已经发布过了，请换一个作品名称。"); return; }
-      if (response.status === 401) { window.location.assign("/api/auth/github"); return; }
+      if (response.status === 401) { sessionStorage.setItem("first-look-draft", JSON.stringify({ title, description, story, type, status })); window.location.assign("/login?next=/create"); return; }
       if (response.ok) {
         const creation = await response.json() as { slug?: string };
         if (creation.slug) {
