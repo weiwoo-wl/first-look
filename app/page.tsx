@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Heart, MessageCircle, Play, Search, Share2, Sparkles } from "lucide-react";
-import RecordStoreHomeV2 from "./record-store-home-v2";
+import ProductBrowserHome from "./product-browser-home";
 
 type Creation = { title: string; description: string; maker: string; type: string; color: string; likes: number; comments: number; badge?: string; preview?: string };
 
@@ -21,7 +21,7 @@ const tabs = ["今日精选", "热门", "最新", "即将发布"];
 const types = ["全部", "工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
 
 export default function Home() {
-  return <RecordStoreHomeV2 />;
+  return <ProductBrowserHome />;
   const [items, setItems] = useState<Creation[]>(creations);
   const [activeTab, setActiveTab] = useState("今日精选");
   const [activeType, setActiveType] = useState("全部");
