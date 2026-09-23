@@ -34,6 +34,10 @@ function ProductCover({ product, active, color }: { product: Product; active: bo
   </div>;
 }
 
+function EmptyProductSlot({ index }: { index: number }) {
+  return <div className="product-stack-empty" aria-label={`空的产品展示位 ${index + 1}`}><span>空位</span><small>等待下一个产品</small></div>;
+}
+
 function ProductBrowser({ products }: { products: Product[] }) {
   const [active, setActive] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -49,23 +53,23 @@ function ProductBrowser({ products }: { products: Product[] }) {
     setActive(nearest);
   }
   function handleScroll() { if (settleTimer.current) clearTimeout(settleTimer.current); settleTimer.current = setTimeout(findCentered, 70); }
-  function select(index: number) { setActive(index); itemRefs.current[index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }
+  function select(index: number) { if (!products[index]) return; setActive(index); itemRefs.current[index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }
   useEffect(() => { if (!products.length) return; const timer = setTimeout(() => select(0), 40); return () => clearTimeout(timer); }, [products]);
-  if (!products.length) return <div className="product-browser-empty"><p>没有找到相关产品。</p></div>;
-  const selected = products[active] || products[0];
+  const selected = products[active] || null;
+  const slotCount = Math.max(products.length, 8);
   return <div className="product-browser-shell" onKeyDown={(event) => { if (event.key === "ArrowLeft") select(Math.max(active - 1, 0)); if (event.key === "ArrowRight") select(Math.min(active + 1, products.length - 1)); }}>
-    <div className="product-browser-top"><div><h2>发现产品</h2><p>左右滑动，看看大家正在创造什么。</p></div><div className="product-browser-controls"><button onClick={() => select(Math.max(active - 1, 0))} disabled={active === 0} aria-label="上一个产品"><ArrowLeft /></button><span>{active + 1} / {products.length}</span><button onClick={() => select(Math.min(active + 1, products.length - 1))} disabled={active === products.length - 1} aria-label="下一个产品"><ArrowRight /></button></div></div>
+    <div className="product-browser-top"><div><h2>发现产品</h2><p>左右滑动，看看大家正在创造什么。</p></div><div className="product-browser-controls"><button onClick={() => select(Math.max(active - 1, 0))} disabled={active === 0 || !products.length} aria-label="上一个产品"><ArrowLeft /></button><span>{products.length ? `${active + 1} / ${products.length}` : "等待产品"}</span><button onClick={() => select(Math.min(active + 1, products.length - 1))} disabled={!products.length || active === products.length - 1} aria-label="下一个产品"><ArrowRight /></button></div></div>
     <div ref={trackRef} className="product-stack" onScroll={handleScroll} tabIndex={0} aria-label="产品展示">
       <div className="product-stack-spacer" aria-hidden="true" />
-      {products.map((product, index) => <Link ref={(node) => { itemRefs.current[index] = node; }} href={`/work/${encodeURIComponent(product.slug)}`} key={product.slug} className={`product-stack-item ${index === active ? "is-active" : ""}`} style={{ zIndex: index === active ? products.length + 2 : products.length - index }} onClick={(event) => { if (index !== active) { event.preventDefault(); select(index); } }} aria-current={index === active ? "true" : undefined}><ProductCover product={product} active={index === active} color={colors[index % colors.length]} /></Link>)}
+      {Array.from({ length: slotCount }, (_, index) => { const product = products[index]; return product ? <Link ref={(node) => { itemRefs.current[index] = node; }} href={`/work/${encodeURIComponent(product.slug)}`} key={product.slug} className={`product-stack-item ${index === active ? "is-active" : ""}`} style={{ zIndex: index === active ? products.length + 2 : products.length - index }} onClick={(event) => { if (index !== active) { event.preventDefault(); select(index); } }} aria-current={index === active ? "true" : undefined}><ProductCover product={product} active={index === active} color={colors[index % colors.length]} /></Link> : <div key={`empty-${index}`} className="product-stack-item product-stack-empty-item" style={{ zIndex: products.length - index }}><EmptyProductSlot index={index} /></div>; })}
       <div className="product-stack-spacer" aria-hidden="true" />
     </div>
-    <div className="product-selected" aria-live="polite"><div><span>{selected.type}</span><h3>{selected.title}</h3><p>{selected.description}</p></div><div className="product-selected-side"><small>创作者</small><b>{selected.creator_name}</b><Link href={`/work/${encodeURIComponent(selected.slug)}`}>查看产品 <ArrowUpRight size={16} /></Link></div></div>
+    {selected ? <div className="product-selected" aria-live="polite"><div><span>{selected.type}</span><h3>{selected.title}</h3><p>{selected.description}</p></div><div className="product-selected-side"><small>创作者</small><b>{selected.creator_name}</b><Link href={`/work/${encodeURIComponent(selected.slug)}`}>查看产品 <ArrowUpRight size={16} /></Link></div></div> : <div className="product-selected product-selected-empty" aria-live="polite"><div><span>还没有产品</span><h3>货架已经准备好了。</h3><p>发布第一个产品，它会出现在这里。</p></div><Link href="/create">发布第一个产品 <ArrowUpRight size={16} /></Link></div>}
   </div>;
 }
 
 export default function ProductBrowserHome() {
-  const [products, setProducts] = useState<Product[]>(samples), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("今日精选"), [activeType, setActiveType] = useState("全部");
+  const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("今日精选"), [activeType, setActiveType] = useState("全部");
   const [user, setUser] = useState<{ displayName: string } | null>(null);
   useEffect(() => {
     fetch("/api/creations").then((response) => response.ok ? response.json() as Promise<Product[]> : [] as Product[]).then((remote) => { if (remote.length) setProducts(remote); }).catch(() => undefined);
