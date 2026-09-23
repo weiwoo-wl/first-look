@@ -2,13 +2,15 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import LikeButton from "./like-button";
 type Media = { object_key: string; media_type: string };
 type Work = { id: number; slug: string; title: string; description: string; type: string; status: string; story: string; creator_name: string; media: Media[] };
-export default function ProductDetail({ params }: { params: Promise<{ slug: string }> }) {
+export default function ProductDetail() {
+  const params = useParams<{ slug: string }>(), slug = params.slug;
   const [work, setWork] = useState<Work | null>(null), [index, setIndex] = useState(0), [error, setError] = useState("");
-  useEffect(() => { params.then(({ slug }) => fetch(`/api/creations?slug=${encodeURIComponent(slug)}`)).then((response) => response.ok ? response.json() : Promise.reject()).then(setWork).catch(() => setError("作品不存在")); }, [params]);
+  useEffect(() => { if (!slug) return; fetch(`/api/creations?slug=${encodeURIComponent(slug)}`).then((response) => response.ok ? response.json() : Promise.reject()).then(setWork).catch(() => setError("作品不存在")); }, [slug]);
   if (error) return <main className="p-12">{error}</main>;
   if (!work) return <main className="p-12">正在打开作品…</main>;
   const media = work.media?.[index], src = media ? `/api/media/file?key=${encodeURIComponent(media.object_key)}` : "";
