@@ -5,7 +5,8 @@ export async function ensureCreationTables(db: CreationDb) {
     db.prepare("CREATE TABLE IF NOT EXISTS creation_media (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,object_key TEXT UNIQUE NOT NULL,media_type TEXT NOT NULL,mime_type TEXT NOT NULL,size INTEGER NOT NULL,sort_order INTEGER NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS creation_versions (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,creator_id TEXT NOT NULL,version_number INTEGER NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,type TEXT NOT NULL,status TEXT NOT NULL,story TEXT NOT NULL,tags TEXT NOT NULL DEFAULT '',product_url TEXT NOT NULL DEFAULT '',change_note TEXT NOT NULL DEFAULT '',media_json TEXT NOT NULL DEFAULT '[]',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,UNIQUE(creation_id,version_number))"),
   ]);
-  for (const statement of ["ALTER TABLE creations ADD COLUMN tags TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN product_url TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL"]) { try { await db.prepare(statement).run(); } catch {} }
+  for (const statement of ["ALTER TABLE creations ADD COLUMN tags TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN product_url TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN updated_at TEXT"]) { try { await db.prepare(statement).run(); } catch {} }
+  try { await db.prepare("UPDATE creations SET updated_at=created_at WHERE updated_at IS NULL").run(); } catch {}
 }
 
 export async function createCreationVersion(db: CreationDb, creationId: number, creatorId: string, changeNote = "") {
