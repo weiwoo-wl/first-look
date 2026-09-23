@@ -1,0 +1,3 @@
+import { currentUser, runtime } from "../../../lib/auth";
+import { ensureCreationTables } from "../../../lib/creations";
+export async function GET(request: Request) { const user = await currentUser(request), db = runtime().DB; if (!user) return Response.json({ error: "请先登录" }, { status: 401 }); if (!db) return Response.json([]); await ensureCreationTables(db); const rows = await db.prepare("SELECT id,slug,title,description,type,status,story,tags,product_url,visibility,created_at,updated_at FROM creations WHERE creator_id=? ORDER BY updated_at DESC,created_at DESC").bind(user.id).all(); return Response.json(rows.results); }

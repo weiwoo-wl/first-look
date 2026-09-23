@@ -9,12 +9,15 @@ export const creations = sqliteTable("creations", {
   type: text("type").notNull(),
   status: text("status").notNull().default("早期测试"),
   story: text("story").notNull().default(""),
+  tags: text("tags").notNull().default(""),
+  productUrl: text("product_url").notNull().default(""),
   creatorId: text("creator_id").notNull(),
   creatorName: text("creator_name").notNull(),
   mediaKey: text("media_key"),
   mediaType: text("media_type"),
   visibility: text("visibility").notNull().default("published"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => ({ slugIndex: uniqueIndex("creations_slug_idx").on(table.slug) }));
 
 export const creationLikes = sqliteTable("creation_likes", {
