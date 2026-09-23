@@ -348,6 +348,12 @@ body {
 .product-selected-empty > a { display: inline-flex; align-items: center; gap: 8px; border-bottom: 1px solid #171717; padding-bottom: 4px; font-size: 12px; font-weight: 700; }
 .product-browser-empty { min-height: 430px; display: grid; place-items: center; border: 1px dashed rgba(23,23,23,.16); border-radius: 24px; color: rgba(23,23,23,.5); }
 
+@media (hover: hover) and (pointer: fine) {
+  .product-stack-item:not(.is-active):hover { transform: translateY(8px) translateX(10px) scale(.96); filter: saturate(.98) brightness(1.02); }
+  .product-stack-item.is-active:hover { transform: translateY(-36px) scale(1.06); }
+  .product-stack-link { cursor: pointer; }
+}
+
 @media (max-width: 700px) {
   .product-browser-shell { margin-inline: -4px; border-radius: 18px; }
   .product-browser-top { padding: 22px 18px 4px; }
