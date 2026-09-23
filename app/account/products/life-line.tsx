@@ -2,12 +2,12 @@
 
 import { ImageIcon, Play, X } from "lucide-react";
 import { useState } from "react";
+import VersionMediaGallery, { type VersionMedia } from "./version-media-gallery";
 
-type Media = { object_key: string; media_type: string };
 export type ProductVersion = {
   id: number; version_number: number; title: string; description: string; story: string;
   type: string; status: string; tags: string; product_url: string; change_note: string;
-  created_at: string; media: Media[];
+  created_at: string; media: VersionMedia[];
 };
 export type ProductEvent = {
   id: number; event_type: string; version_number: number | null; likes_total: number | null;
@@ -34,7 +34,7 @@ function VersionCover({ version, open }: { version: ProductVersion; open: boolea
 
 function VersionDetails({ version, likesAtRelease, currentLikes }: { version: ProductVersion; likesAtRelease: number | null; currentLikes: number }) {
   return <div className="mt-4 border-t border-black/10 pt-5">
-    {version.media?.length > 0 && <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{version.media.map((media) => <div key={media.object_key} className="aspect-square overflow-hidden rounded-sm bg-black/5">{media.media_type === "video" ? <video src={mediaUrl(media.object_key)} controls preload="metadata" className="h-full w-full object-cover" /> : <img src={mediaUrl(media.object_key)} alt={`${version.title} 的历史版本图片`} className="h-full w-full object-cover" />}</div>)}</div>}
+    {version.media?.length > 0 && <VersionMediaGallery media={version.media} title={version.title} />}
     <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_12rem]">
       <div><h3 className="text-lg font-semibold tracking-[-.035em]">{version.title}</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-black/65">{version.description || "这次发布没有填写产品介绍。"}</p>{version.story && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-black/50"><span className="font-medium text-black/70">创作思路</span><br />{version.story}</p>}{version.change_note && <p className="mt-4 border-l-2 border-[#bd4b32] pl-3 text-sm leading-6 text-black/60">{version.change_note}</p>}</div>
       <dl className="space-y-3 text-xs"><div><dt className="text-black/40">版本</dt><dd className="mt-1 font-medium">第 {version.version_number} 次发布</dd></div><div><dt className="text-black/40">当时状态</dt><dd className="mt-1 font-medium">{version.status || "未填写"}</dd></div><div><dt className="text-black/40">喜欢</dt><dd className="mt-1 font-medium">发布时 {likesAtRelease ?? "—"} · 当前 {currentLikes}</dd></div>{version.tags && <div><dt className="text-black/40">标签</dt><dd className="mt-1 leading-5">{version.tags}</dd></div>}{version.product_url && <div><dt className="text-black/40">产品链接</dt><dd className="mt-1 break-all"><a href={version.product_url} target="_blank" rel="noreferrer" className="underline underline-offset-2">打开链接</a></dd></div>}</dl>

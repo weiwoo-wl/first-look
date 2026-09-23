@@ -374,3 +374,22 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .product-stack-item, .product-browser-controls button { transition: none; }
 }
+
+/* Historical product media viewer */
+.first-look-lightbox {
+  --yarl__color_backdrop: rgba(15, 15, 14, .96);
+  --yarl__color_button: rgba(255, 255, 255, .82);
+  --yarl__color_button_active: #ffffff;
+  --yarl__color_button_disabled: rgba(255, 255, 255, .28);
+  --yarl__button_filter: none;
+  --yarl__navigation_button_padding: 20px 14px;
+}
+
+.first-look-lightbox .yarl__button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .first-look-lightbox * { animation-duration: 0s !important; transition-duration: 0s !important; }
+}
