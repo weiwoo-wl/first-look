@@ -48,7 +48,7 @@ export default function LifeLine({ versions, events, currentLikes }: { versions:
   const entries = [...versions.map((version) => ({ key: `v${version.id}`, date: version.created_at, kind: "version" as const, version })), ...events.filter((event) => eventLabels[event.event_type]).map((event) => ({ key: `e${event.id}`, date: event.created_at, kind: "event" as const, event }))].sort((a, b) => b.date.localeCompare(a.date));
   if (!entries.length) return <p className="py-6 text-sm text-black/45">完成首次发布后，这里会出现产品的生命线。</p>;
   return <div className="mt-7">
-    <div className="grid grid-cols-[5.5rem_1.5rem_1fr] items-center sm:grid-cols-[9rem_2rem_1fr]"><span /><span className="mx-auto h-3 w-3 rounded-full border-2 border-[#f7f7f4] bg-[#bd4b32] ring-1 ring-[#bd4b32]" /><p className="text-xs font-semibold tracking-wide text-[#9a3f2c]">产品仍在成长</p></div>
+    <div className="grid grid-cols-[5.5rem_1.5rem_1fr] items-center sm:grid-cols-[9rem_2rem_1fr]"><span /><span className="mx-auto h-3 w-3 rounded-full border-2 border-[#f7f7f4] bg-[#bd4b32] ring-1 ring-[#bd4b32]" /><p className="text-xs font-semibold tracking-wide text-[#9a3f2c]">发布记录</p></div>
     <ol aria-label="产品生命线">{entries.map((entry, index) => {
       const isFirstRelease = entry.kind === "version" && entry.version.version_number === 1;
       const isOpen = entry.kind === "version" && selected === entry.version.id;
