@@ -38,11 +38,11 @@ function EmptyProductSlot({ index }: { index: number }) {
 }
 
 function ProductBrowser({ products }: { products: Product[] }) {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(-1);
   const trackRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => setActive(0), [products]);
+  useEffect(() => setActive(-1), [products]);
   function findCentered() {
     const track = trackRef.current;
     if (!track) return;
@@ -53,13 +53,12 @@ function ProductBrowser({ products }: { products: Product[] }) {
   }
   function handleScroll() { if (settleTimer.current) clearTimeout(settleTimer.current); settleTimer.current = setTimeout(findCentered, 70); }
   function select(index: number) { if (!products[index]) return; setActive(index); itemRefs.current[index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }
-  useEffect(() => { if (!products.length) return; const timer = setTimeout(() => select(0), 40); return () => clearTimeout(timer); }, [products]);
   const slotCount = Math.max(products.length, 8);
   return <div className="product-browser-shell" onKeyDown={(event) => { if (event.key === "ArrowLeft") select(Math.max(active - 1, 0)); if (event.key === "ArrowRight") select(Math.min(active + 1, products.length - 1)); }}>
-    <div className="product-browser-top"><div><h2>发现产品</h2><p>左右滑动，看看大家正在创造什么。</p></div><div className="product-browser-controls"><button onClick={() => select(Math.max(active - 1, 0))} disabled={active === 0 || !products.length} aria-label="上一个产品"><ArrowLeft /></button><span>{products.length ? `${active + 1} / ${products.length}` : "等待产品"}</span><button onClick={() => select(Math.min(active + 1, products.length - 1))} disabled={!products.length || active === products.length - 1} aria-label="下一个产品"><ArrowRight /></button></div></div>
+    <div className="product-browser-top"><div><h2>发现产品</h2><p>左右滑动，看看大家正在创造什么。</p></div><div className="product-browser-controls"><button onClick={() => select(Math.max(active - 1, 0))} disabled={active <= 0 || !products.length} aria-label="上一个产品"><ArrowLeft /></button><span>{products.length ? `${active >= 0 ? active + 1 : "未选择"} / ${products.length}` : "等待产品"}</span><button onClick={() => select(Math.min(active + 1, products.length - 1))} disabled={!products.length || active === products.length - 1} aria-label="下一个产品"><ArrowRight /></button></div></div>
     <div ref={trackRef} className="product-stack" onScroll={handleScroll} tabIndex={0} aria-label="产品展示">
       <div className="product-stack-spacer" aria-hidden="true" />
-      {Array.from({ length: slotCount }, (_, index) => { const product = products[index]; return product ? <div key={product.slug} className={`product-stack-item ${index === active ? "is-active" : ""}`} style={{ zIndex: index === active ? products.length + 2 : products.length - index }}><a ref={(node) => { itemRefs.current[index] = node; }} href={`/work/${encodeURIComponent(product.slug)}`} className="product-stack-link" onClick={(event) => { if (index !== active) { event.preventDefault(); select(index); } }} aria-current={index === active ? "true" : undefined}><ProductCover product={product} active={index === active} color={colors[index % colors.length]} /></a>{index === active && <div className="product-inline-detail"><span>{product.type}</span><h3>{product.title}</h3><p>{product.description}</p><small>{product.creator_name}</small></div>}</div> : <div key={`empty-${index}`} className="product-stack-item product-stack-empty-item" style={{ zIndex: products.length - index }}><EmptyProductSlot index={index} /></div>; })}
+      {Array.from({ length: slotCount }, (_, index) => { const product = products[index]; return product ? <div key={product.slug} className={`product-stack-item ${index === active ? "is-active" : ""}`} style={{ zIndex: index === active ? products.length + 2 : index + 1 }}><a ref={(node) => { itemRefs.current[index] = node; }} href={`/work/${encodeURIComponent(product.slug)}`} className="product-stack-link" onClick={(event) => { if (index !== active) { event.preventDefault(); select(index); } }} aria-current={index === active ? "true" : undefined}><ProductCover product={product} active={index === active} color={colors[index % colors.length]} /></a>{index === active && <div className="product-inline-detail"><span>{product.type}</span><h3>{product.title}</h3><p>{product.description}</p><small>{product.creator_name}</small></div>}</div> : <div key={`empty-${index}`} className="product-stack-item product-stack-empty-item" style={{ zIndex: index + 1 }}><EmptyProductSlot index={index} /></div>; })}
       <div className="product-stack-spacer" aria-hidden="true" />
     </div>
   </div>;
