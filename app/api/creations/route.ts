@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   return Response.json(enriched);
 }
 
-export async function POST(request: Request) {
+async function postCreation(request: Request) {
   if (request.headers.get("Origin") !== new URL(request.url).origin) return Response.json({ error: "请求来源无效" }, { status: 403 });
   const user = await currentUser(request);
   if (!user) return Response.json({ error: "请先登录后再发布作品" }, { status: 401 });
@@ -43,4 +43,9 @@ export async function POST(request: Request) {
   }).returning();
   if (!body.mediaCount) await createCreationVersion(runtime().DB!, creation.id, user.id, body.changeNote || "首次发布");
   return Response.json(creation, { status: 201 });
+}
+
+export async function POST(request: Request) {
+  try { return await postCreation(request); }
+  catch (error) { console.error("[api/creations] publish failed", error); return Response.json({ error: "服务器暂时无法保存产品，请稍后再试" }, { status: 500 }); }
 }
