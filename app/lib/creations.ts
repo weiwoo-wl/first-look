@@ -4,6 +4,8 @@ export async function ensureCreationTables(db: CreationDb) {
   await db.batch([
     db.prepare("CREATE TABLE IF NOT EXISTS creation_media (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,object_key TEXT UNIQUE NOT NULL,media_type TEXT NOT NULL,mime_type TEXT NOT NULL,size INTEGER NOT NULL,sort_order INTEGER NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS creation_versions (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,creator_id TEXT NOT NULL,version_number INTEGER NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,type TEXT NOT NULL,status TEXT NOT NULL,story TEXT NOT NULL,tags TEXT NOT NULL DEFAULT '',product_url TEXT NOT NULL DEFAULT '',change_note TEXT NOT NULL DEFAULT '',media_json TEXT NOT NULL DEFAULT '[]',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,UNIQUE(creation_id,version_number))"),
+    db.prepare("CREATE TABLE IF NOT EXISTS creation_events (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,actor_id TEXT NOT NULL,event_type TEXT NOT NULL,version_number INTEGER,likes_total INTEGER,detail TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS creation_likes (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,user_id TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,UNIQUE(creation_id,user_id))"),
   ]);
   for (const statement of ["ALTER TABLE creations ADD COLUMN tags TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN product_url TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN updated_at TEXT"]) { try { await db.prepare(statement).run(); } catch {} }
   try { await db.prepare("UPDATE creations SET updated_at=created_at WHERE updated_at IS NULL").run(); } catch {}
@@ -17,7 +19,15 @@ export async function createCreationVersion(db: CreationDb, creationId: number, 
   const media = await db.prepare("SELECT object_key,media_type,mime_type,size,sort_order FROM creation_media WHERE creation_id=? ORDER BY sort_order").bind(creationId).all();
   const version = Number(count?.version || 0) + 1;
   await db.prepare("INSERT INTO creation_versions(creation_id,creator_id,version_number,title,description,type,status,story,tags,product_url,change_note,media_json)VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(creationId,creatorId,version,creation.title,creation.description,creation.type,creation.status,creation.story||"",creation.tags||"",creation.product_url||"",changeNote,JSON.stringify(media.results||[])).run();
+  const likes = await db.prepare("SELECT COUNT(*) AS total FROM creation_likes WHERE creation_id=?").bind(creationId).first<{total:number}>();
+  await db.prepare("INSERT INTO creation_events(creation_id,actor_id,event_type,version_number,likes_total,detail)VALUES(?,?,?,?,?,?)").bind(creationId,creatorId,version===1?"published":"updated",version,Number(likes?.total||0),changeNote).run();
   return version;
+}
+
+export async function recordCreationEvent(db: CreationDb, creationId: number, actorId: string, eventType: string, detail = "", likesTotal: number | null = null) {
+  await ensureCreationTables(db);
+  const latest = await db.prepare("SELECT MAX(version_number) AS version FROM creation_versions WHERE creation_id=?").bind(creationId).first<{version:number|null}>();
+  await db.prepare("INSERT INTO creation_events(creation_id,actor_id,event_type,version_number,likes_total,detail)VALUES(?,?,?,?,?,?)").bind(creationId,actorId,eventType,latest?.version ?? null,likesTotal,detail).run();
 }
 
 export function parseTags(value: unknown) { return String(value || "").split(/[，,\n]/).map((tag) => tag.trim()).filter(Boolean).slice(0, 8).join(","); }
