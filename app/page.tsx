@@ -103,7 +103,6 @@ export default function Home() {
       <section id="top" className="mx-auto max-w-7xl px-5 pb-10 pt-12 lg:px-8 lg:pt-16">
         <div className="max-w-2xl">
           <h1 className="max-w-4xl text-4xl font-semibold leading-[1.08] tracking-[-0.065em] sm:text-5xl lg:text-[4rem]">让每一个用 AI 创造的产品，<br /><span className="text-black/35">尤其是非专业创造者的产品，都有被发现的机会。</span></h1>
-          <p className="mt-6 max-w-lg text-base leading-7 text-black/55">今天，有什么值得先看一眼？工具、视频、数字人、Skill，和所有还没有被命名的好东西。</p>
         </div>
       </section>
 
