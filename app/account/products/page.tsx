@@ -48,7 +48,7 @@ export default function ProductsPage() {
   }
 
   return <main className="min-h-dvh bg-[#f7f7f4] text-[#171717]">
-    <header className="border-b border-black/10"><div className="mx-auto flex h-16 max-w-4xl items-center px-5"><Link href="/" className="inline-flex items-center gap-2 text-sm text-black/50"><ArrowLeft size={16} />返回发现</Link></div></header>
+    <header className="border-b border-black/10"><div className="mx-auto flex h-16 max-w-4xl items-center px-5"><a href="/" onClick={(event) => { event.preventDefault(); window.location.assign("/"); }} className="inline-flex items-center gap-2 text-sm text-black/50 hover:text-black"><ArrowLeft size={16} />返回主页</a></div></header>
     <section className="mx-auto max-w-4xl px-5 py-12">
       <p className="text-sm text-black/45">产品内容</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.06em]">我的产品</h1><p className="mt-4 max-w-xl text-sm leading-6 text-black/55">从第一次发布到现在，每一次变化都会沿着生命线留下来。</p>
       {loading ? <div className="mt-12 space-y-4" aria-busy="true" aria-label="正在读取产品"><div className="h-20 animate-pulse bg-black/[.04]" /><div className="h-64 animate-pulse bg-black/[.04]" /></div> : error ? <div className="mt-10 border border-black/10 bg-white p-7"><p className="text-sm text-black/55">{error}</p><Link href="/login?next=/account/products" className="mt-5 inline-block rounded-full bg-black px-5 py-3 text-sm text-white">去登录</Link></div> : products.length ? <div className="mt-10 space-y-12">
