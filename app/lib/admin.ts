@@ -18,9 +18,14 @@ export async function currentAdmin(request: Request): Promise<AdminIdentity | nu
   const db = runtime().DB;
   const user = await currentUser(request);
   if (!db || !user) return null;
+  const role = await adminRoleForUser(db, user.id);
+  return role ? { ...user, role } : null;
+}
+
+export async function adminRoleForUser(db: D1Database, userId: string): Promise<AdminRole | null> {
   await ensureAdminTables(db);
-  const admin = await db.prepare("SELECT role FROM site_admins WHERE user_id=?").bind(user.id).first<{ role: AdminRole }>();
-  return admin ? { ...user, role: admin.role } : null;
+  const admin = await db.prepare("SELECT role FROM site_admins WHERE user_id=?").bind(userId).first<{ role: AdminRole }>();
+  return admin?.role || null;
 }
 
 export async function logAdminAction(db: D1Database, adminId: string, action: string, targetType: string, targetId: string, detail = "") {
