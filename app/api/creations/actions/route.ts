@@ -5,7 +5,8 @@ export async function GET(request: Request) {
   const db = runtime().DB, creationId = Number(new URL(request.url).searchParams.get("creationId"));
   if (!db || !creationId) return Response.json({ likes: 0, favorites: 0, shares: 0, views: 0, liked: false, favorited: false });
   await ensureCreationTables(db);
-  if (!await db.prepare("SELECT id FROM creations WHERE id=? AND visibility='published'").bind(creationId).first()) return Response.json({ error: "产品不存在" }, { status: 404 });
+  const product = await db.prepare("SELECT c.id,c.slug,CASE WHEN c.contact_email_visible=1 THEN u.email ELSE NULL END AS contact_email FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.id=? AND c.visibility='published'").bind(creationId).first<{ id: number; slug: string; contact_email: string | null }>();
+  if (!product) return Response.json({ error: "产品不存在" }, { status: 404 });
   const user = await currentUser(request);
   const [likes, favorites, shares, views] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS total FROM creation_likes WHERE creation_id=?").bind(creationId).first<{ total: number }>(),
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
   ]);
   const liked = user ? await db.prepare("SELECT id FROM creation_likes WHERE creation_id=? AND user_id=?").bind(creationId, user.id).first() : null;
   const favorited = user ? await db.prepare("SELECT id FROM creation_favorites WHERE creation_id=? AND user_id=?").bind(creationId, user.id).first() : null;
-  return Response.json({ likes: Number(likes?.total || 0), favorites: Number(favorites?.total || 0), shares: Number(shares?.total || 0), views: Number(views?.total || 0), liked: Boolean(liked), favorited: Boolean(favorited) });
+  return Response.json({ likes: Number(likes?.total || 0), favorites: Number(favorites?.total || 0), shares: Number(shares?.total || 0), views: Number(views?.total || 0), liked: Boolean(liked), favorited: Boolean(favorited), contactEmail: product.contact_email, slug: product.slug });
 }
 
 export async function POST(request: Request) {
