@@ -1,7 +1,7 @@
 import { currentAdmin, ensureAdminTables, logAdminAction } from "../../lib/admin";
 import { runtime, sameOrigin } from "../../lib/auth";
 
-type AdminAction = "hide_creation" | "restore_creation" | "disable_user" | "enable_user" | "grant_admin" | "revoke_admin" | "resolve_report";
+type AdminAction = "hide_creation" | "restore_creation" | "disable_user" | "enable_user" | "grant_admin" | "revoke_admin" | "resolve_report" | "restore_report";
 
 export async function GET(request: Request) {
   const db = runtime().DB;
@@ -70,7 +70,13 @@ export async function POST(request: Request) {
       await db.prepare("DELETE FROM site_admins WHERE user_id=? AND role='admin'").bind(targetId).run();
     }
     await logAdminAction(db, admin.id, action, "user", targetId, target.email);
-  } else if (action === "resolve_report") {
+  } else if (action === "resolve_report" || action === "restore_report") {
+    const report = await db.prepare("SELECT id,target_type,target_id FROM site_reports WHERE id=? AND status='pending'").bind(Number(targetId)).first<{ id:number; target_type:string; target_id:string }>();
+    if (!report) return Response.json({ error: "这条举报已经处理过了" }, { status: 409 });
+    if (action === "restore_report" && report.target_type === "creation") {
+      const hidden = await db.prepare("SELECT previous_visibility FROM admin_hidden_creations WHERE creation_id=?").bind(Number(report.target_id)).first<{ previous_visibility:string }>();
+      if (hidden) await db.batch([db.prepare("UPDATE creations SET visibility=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND visibility='admin_hidden'").bind(hidden.previous_visibility, Number(report.target_id)), db.prepare("DELETE FROM admin_hidden_creations WHERE creation_id=?").bind(Number(report.target_id))]);
+    }
     await db.prepare("UPDATE site_reports SET status='resolved',resolved_at=CURRENT_TIMESTAMP,resolved_by=? WHERE id=? AND status='pending'").bind(admin.id, Number(targetId)).run();
     await logAdminAction(db, admin.id, action, "report", targetId);
   } else return Response.json({ error: "不支持这个操作" }, { status: 400 });
