@@ -28,21 +28,24 @@ async function postCreation(request: Request) {
   const db = getDb();
   await ensureCreationTables(runtime().DB!);
   const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number; technical?: unknown; attachmentCount?: number; visibility?: "published" | "private" };
-  if (!body.title?.trim() || !body.description?.trim() || !body.type?.trim()) {
-    return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
-  }
+  const title = body.title?.trim() || "", description = body.description?.trim() || "", type = body.type?.trim() || "";
+  if (!title || !description || !type) return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
+  if (title.length < 2 || title.length > 80) return Response.json({ error: "作品名称需要为 2 到 80 个字" }, { status: 400 });
+  if (description.length < 10 || description.length > 500) return Response.json({ error: "一句话介绍需要为 10 到 500 个字" }, { status: 400 });
+  if (body.story && body.story.trim().length > 2000) return Response.json({ error: "创作故事不能超过 2000 个字" }, { status: 400 });
+  if (body.productUrl && body.productUrl.trim() && !/^https?:\/\//i.test(body.productUrl.trim())) return Response.json({ error: "产品链接需要以 http:// 或 https:// 开头" }, { status: 400 });
 
   let technical;
   try { technical = normalizeTechnical(body.technical); }
   catch (error) { return Response.json({error: error instanceof Error ? error.message : "技术分享格式不正确"},{status:400}); }
   if (body.attachmentCount !== undefined && (!Number.isInteger(body.attachmentCount) || body.attachmentCount < 0 || body.attachmentCount > 5)) return Response.json({error:"技术资料最多 5 个"},{status:400});
   const pending = Boolean(body.mediaCount || body.attachmentCount);
-  const existing = await db.select({ id: creations.id }).from(creations).where(eq(creations.title, body.title.trim())).limit(1);
+  const existing = await db.select({ id: creations.id }).from(creations).where(eq(creations.title, title)).limit(1);
   if (existing.length) return Response.json({ error: "这个作品已经发布过了" }, { status: 409 });
 
-  const slug = `${body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
+  const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
   const [creation] = await db.insert(creations).values({
-    slug, title: body.title.trim(), description: body.description.trim(), type: body.type,
+    slug, title, description, type,
     status: body.status || "早期测试", story: body.story || "", tags: parseTags(body.tags), productUrl: body.productUrl?.trim() || "", creatorId: user.id,
     creatorName: user.displayName,
     visibility: pending ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),

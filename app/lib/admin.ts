@@ -8,9 +8,10 @@ export async function ensureAdminTables(db: D1Database) {
   await db.batch([
     db.prepare("CREATE TABLE IF NOT EXISTS site_admins (user_id TEXT PRIMARY KEY,role TEXT NOT NULL DEFAULT 'admin',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS admin_hidden_creations (creation_id INTEGER PRIMARY KEY,previous_visibility TEXT NOT NULL,hidden_by TEXT NOT NULL,hidden_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
-    db.prepare("CREATE TABLE IF NOT EXISTS site_reports (id INTEGER PRIMARY KEY AUTOINCREMENT,reporter_id TEXT,target_type TEXT NOT NULL,target_id TEXT NOT NULL,reason TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,resolved_at TEXT,resolved_by TEXT)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS site_reports (id INTEGER PRIMARY KEY AUTOINCREMENT,reporter_id TEXT,target_type TEXT NOT NULL,target_id TEXT NOT NULL,reason TEXT NOT NULL,detail TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT 'pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,resolved_at TEXT,resolved_by TEXT)"),
     db.prepare("CREATE TABLE IF NOT EXISTS admin_actions (id INTEGER PRIMARY KEY AUTOINCREMENT,admin_id TEXT NOT NULL,action TEXT NOT NULL,target_type TEXT NOT NULL,target_id TEXT NOT NULL,detail TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
   ]);
+  try { await db.prepare("ALTER TABLE site_reports ADD COLUMN detail TEXT NOT NULL DEFAULT ''").run(); } catch {}
   await db.prepare("INSERT OR IGNORE INTO site_admins(user_id,role) SELECT id,'owner' FROM users ORDER BY created_at ASC,id ASC LIMIT 1").run();
 }
 

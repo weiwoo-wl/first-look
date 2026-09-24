@@ -4,12 +4,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Heart, Share2 } from "lucide-react";
-import ProductDetail from "./product-detail";
+import ProductDetailReported from "./product-detail-reported";
 
 type Work = { description?: string; maker?: string; type?: string; status?: string; story?: string; preview?: string; likes?: number };
 
 export default function WorkPage({ params }: { params: Promise<{ slug: string }> }) {
-  return <ProductDetail params={params} />;
+  return <ProductDetailReported params={params} />;
   const [title, setTitle] = useState("");
   const [work, setWork] = useState<Work>({});
   const [liked, setLiked] = useState(false);
