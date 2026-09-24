@@ -68,7 +68,7 @@ export default function ProductBrowserHome() {
   const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("今日精选"), [activeType, setActiveType] = useState("全部");
   const [user, setUser] = useState<{ displayName: string } | null>(null), [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    fetch("/api/creations").then((response) => response.ok ? response.json() as Promise<Product[]> : [] as Product[]).then((remote) => { if (remote.length) setProducts(remote); }).catch(() => undefined);
+    fetch("/api/creations", { cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<Product[]> : [] as Product[]).then((remote) => { setProducts(remote); }).catch(() => undefined);
     fetch("/api/auth/session").then((response) => response.ok ? response.json() as Promise<{ user: { displayName: string } | null; isAdmin?: boolean }> : { user: null, isAdmin: false }).then((session) => { setUser(session.user || null); setIsAdmin(Boolean(session.isAdmin)); }).catch(() => undefined);
   }, []);
   const visible = useMemo(() => products.filter((product) => (activeType === "全部" || product.type.includes(activeType)) && (!query || `${product.title} ${product.description} ${product.creator_name}`.toLowerCase().includes(query.toLowerCase()))), [products, activeType, query]);
