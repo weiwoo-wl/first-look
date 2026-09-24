@@ -9,14 +9,16 @@ type Props = {
   slug: string;
   title: string;
   visibility: string;
+  contactEmailVisible: boolean;
   onVisibilityChange: (next: string) => void;
   onDeleted: () => void;
 };
 
-export default function ProductControls({ id, slug, title, visibility, onVisibilityChange, onDeleted }: Props) {
+export default function ProductControls({ id, slug, title, visibility, contactEmailVisible, onVisibilityChange, onDeleted }: Props) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
+  const [contactVisible, setContactVisible] = useState(contactEmailVisible);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -46,8 +48,25 @@ export default function ProductControls({ id, slug, title, visibility, onVisibil
     }
   }
 
+  async function toggleContact() {
+    const next = !contactVisible;
+    setContactVisible(next);
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/creations/manage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId: id, action: "toggle_contact", contactEmailVisible: next }) });
+      const result = await response.json() as { error?: string; contactEmailVisible?: boolean };
+      if (!response.ok) throw Error(result.error || "保存失败");
+      setContactVisible(Boolean(result.contactEmailVisible));
+    } catch (cause) {
+      setContactVisible(!next);
+      setError(cause instanceof Error ? cause.message : "保存失败");
+    } finally { setBusy(false); }
+  }
+
   return <>
     <div className="flex flex-wrap items-center gap-2">
+      <button type="button" disabled={busy} onClick={() => void toggleContact()} className={`rounded-full border px-3 py-2 text-xs disabled:opacity-50 ${contactVisible ? "border-emerald-700/30 bg-emerald-50 text-emerald-800" : "border-black/12 text-black/60"}`}>{contactVisible ? "邮箱已公开" : "公开联系邮箱"}</button>
       {["published", "private", "unpublished"].includes(visibility) && <button disabled={busy} onClick={() => void request(visibility === "published" ? "unpublish" : visibility === "private" ? "publicize" : "republish")} className="rounded-full border border-black/12 px-3 py-2 text-xs disabled:opacity-50">{busy ? "处理中…" : visibility === "published" ? "下架产品" : visibility === "private" ? "公开上架" : "重新上架"}</button>}
       {visibility === "published" && <Link href={`/work/${encodeURIComponent(slug)}`} aria-label={`查看 ${title}`} className="rounded-full border border-black/12 p-2"><ExternalLink size={15} /></Link>}
       <button disabled={busy} onClick={() => { setError(""); setConfirming(true); }} className="inline-flex items-center gap-1 rounded-full border border-red-700/20 px-3 py-2 text-xs text-red-700 disabled:opacity-50"><Trash2 size={13} />删除产品</button>

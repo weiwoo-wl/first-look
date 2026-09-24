@@ -21,10 +21,16 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: "请先登录" }, { status: 401 });
   if (!db) return Response.json({ error: "数据库暂不可用" }, { status: 503 });
   await ensureCreationTables(db);
-  const body = await request.json() as { creationId?: number; action?: "unpublish" | "republish" | "publicize" | "delete" };
-  if (!body.creationId || !["unpublish", "republish", "publicize", "delete"].includes(body.action || "")) return Response.json({ error: "操作信息不正确" }, { status: 400 });
-  const product = await db.prepare("SELECT id,visibility FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id).first<{ id:number; visibility:string }>();
+  const body = await request.json() as { creationId?: number; action?: "unpublish" | "republish" | "publicize" | "delete" | "toggle_contact"; contactEmailVisible?: boolean };
+  if (!body.creationId || !["unpublish", "republish", "publicize", "delete", "toggle_contact"].includes(body.action || "")) return Response.json({ error: "操作信息不正确" }, { status: 400 });
+  const product = await db.prepare("SELECT id,visibility,contact_email_visible FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id).first<{ id:number; visibility:string; contact_email_visible:number }>();
   if (!product) return Response.json({ error: "找不到这个产品" }, { status: 404 });
+
+  if (body.action === "toggle_contact") {
+    const visible = body.contactEmailVisible === true ? 1 : 0;
+    await db.prepare("UPDATE creations SET contact_email_visible=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND creator_id=?").bind(visible, body.creationId, user.id).run();
+    return Response.json({ ok: true, contactEmailVisible: Boolean(visible) });
+  }
 
   if (["finalizing","deleting"].includes(product.visibility)) return Response.json({error:"作品正在保存或删除，请稍后重试"},{status:409});
   if (body.action === "delete") {
