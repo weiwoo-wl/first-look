@@ -1,6 +1,6 @@
 "use client";
 
-import ProductDetail from "./product-detail-reported";
+import ProductDetail from "./product-detail";
 
 export default function WorkPage({ params }: { params: Promise<{ slug: string }> }) {
   return <ProductDetail params={params} />;
