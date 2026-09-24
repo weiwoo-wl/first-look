@@ -26,7 +26,7 @@ async function postCreation(request: Request) {
   if (!user) return Response.json({ error: "请先登录后再发布作品" }, { status: 401 });
   const db = getDb();
   await ensureCreationTables(runtime().DB!);
-  const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number };
+  const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number; visibility?: "published" | "private" };
   if (!body.title?.trim() || !body.description?.trim() || !body.type?.trim()) {
     return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
   }
@@ -39,7 +39,7 @@ async function postCreation(request: Request) {
     slug, title: body.title.trim(), description: body.description.trim(), type: body.type,
     status: body.status || "早期测试", story: body.story || "", tags: parseTags(body.tags), productUrl: body.productUrl?.trim() || "", creatorId: user.id,
     creatorName: user.displayName,
-    visibility: body.mediaCount ? "draft" : "published",
+    visibility: body.mediaCount ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),
   }).returning();
   if (!body.mediaCount) await createCreationVersion(runtime().DB!, creation.id, user.id, body.changeNote || "首次发布");
   return Response.json(creation, { status: 201 });

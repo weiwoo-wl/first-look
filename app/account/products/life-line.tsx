@@ -14,7 +14,7 @@ export type ProductEvent = {
   detail: string; created_at: string;
 };
 
-const eventLabels: Record<string, string> = { unpublished: "产品已下架", republished: "产品重新上架" };
+const eventLabels: Record<string, string> = { unpublished: "产品已下架", republished: "产品重新上架", publicized: "产品公开上架" };
 
 function formatDate(value: string) {
   const date = new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`);

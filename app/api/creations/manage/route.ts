@@ -18,8 +18,8 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: "请先登录" }, { status: 401 });
   if (!db) return Response.json({ error: "数据库暂不可用" }, { status: 503 });
   await ensureCreationTables(db);
-  const body = await request.json() as { creationId?: number; action?: "unpublish" | "republish" | "delete" };
-  if (!body.creationId || !["unpublish", "republish", "delete"].includes(body.action || "")) return Response.json({ error: "操作信息不正确" }, { status: 400 });
+  const body = await request.json() as { creationId?: number; action?: "unpublish" | "republish" | "publicize" | "delete" };
+  if (!body.creationId || !["unpublish", "republish", "publicize", "delete"].includes(body.action || "")) return Response.json({ error: "操作信息不正确" }, { status: 400 });
   const product = await db.prepare("SELECT id,visibility FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id).first<{ id:number; visibility:string }>();
   if (!product) return Response.json({ error: "找不到这个产品" }, { status: 404 });
 
@@ -42,10 +42,14 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, deleted: true });
   }
 
-  if (product.visibility === "draft") return Response.json({ error: "草稿还没有发布" }, { status: 409 });
+  if (["draft", "private_pending"].includes(product.visibility)) return Response.json({ error: "作品还没有完成发布" }, { status: 409 });
+  if (body.action === "publicize" && product.visibility !== "private") return Response.json({ error: "只有仅自己可见的作品可以公开上架" }, { status: 409 });
+  if (body.action === "unpublish" && product.visibility === "private") return Response.json({ error: "仅自己可见的作品尚未公开上架" }, { status: 409 });
   const visibility = body.action === "unpublish" ? "unpublished" : "published";
   if (product.visibility === visibility) return Response.json({ ok: true, visibility });
   await db.prepare("UPDATE creations SET visibility=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND creator_id=?").bind(visibility, body.creationId, user.id).run();
-  await recordCreationEvent(db, body.creationId, user.id, visibility === "published" ? "republished" : "unpublished", visibility === "published" ? "产品重新上架" : "产品下架");
+  const eventType = body.action === "publicize" ? "publicized" : visibility === "published" ? "republished" : "unpublished";
+  const detail = body.action === "publicize" ? "产品公开上架" : visibility === "published" ? "产品重新上架" : "产品下架";
+  await recordCreationEvent(db, body.creationId, user.id, eventType, detail);
   return Response.json({ ok: true, visibility });
 }
