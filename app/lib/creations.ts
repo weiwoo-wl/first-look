@@ -1,7 +1,12 @@
+import { readTechnical } from "./technical";
+
 type CreationDb = D1Database;
 
 export async function ensureCreationTables(db: CreationDb) {
   await db.batch([
+    db.prepare("CREATE TABLE IF NOT EXISTS creation_technical (creation_id INTEGER PRIMARY KEY,notes TEXT NOT NULL DEFAULT '',links_json TEXT NOT NULL DEFAULT '[]')"),
+    db.prepare("CREATE TABLE IF NOT EXISTS creation_technical_files (object_key TEXT PRIMARY KEY,creation_id INTEGER NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS creation_version_technical (version_id INTEGER PRIMARY KEY,data_json TEXT NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS creation_media (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,object_key TEXT UNIQUE NOT NULL,media_type TEXT NOT NULL,mime_type TEXT NOT NULL,size INTEGER NOT NULL,sort_order INTEGER NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS creation_versions (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,creator_id TEXT NOT NULL,version_number INTEGER NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,type TEXT NOT NULL,status TEXT NOT NULL,story TEXT NOT NULL,tags TEXT NOT NULL DEFAULT '',product_url TEXT NOT NULL DEFAULT '',change_note TEXT NOT NULL DEFAULT '',media_json TEXT NOT NULL DEFAULT '[]',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,UNIQUE(creation_id,version_number))"),
     db.prepare("CREATE TABLE IF NOT EXISTS creation_events (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,actor_id TEXT NOT NULL,event_type TEXT NOT NULL,version_number INTEGER,likes_total INTEGER,detail TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
@@ -19,6 +24,8 @@ export async function createCreationVersion(db: CreationDb, creationId: number, 
   const media = await db.prepare("SELECT object_key,media_type,mime_type,size,sort_order FROM creation_media WHERE creation_id=? ORDER BY sort_order").bind(creationId).all();
   const version = Number(count?.version || 0) + 1;
   await db.prepare("INSERT INTO creation_versions(creation_id,creator_id,version_number,title,description,type,status,story,tags,product_url,change_note,media_json)VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(creationId,creatorId,version,creation.title,creation.description,creation.type,creation.status,creation.story||"",creation.tags||"",creation.product_url||"",changeNote,JSON.stringify(media.results||[])).run();
+  const savedVersion = await db.prepare("SELECT id FROM creation_versions WHERE creation_id=? AND version_number=?").bind(creationId,version).first<{id:number}>();
+  if (savedVersion) await db.prepare("INSERT INTO creation_version_technical(version_id,data_json) VALUES(?,?)").bind(savedVersion.id,JSON.stringify(await readTechnical(db,creationId))).run();
   const likes = await db.prepare("SELECT COUNT(*) AS total FROM creation_likes WHERE creation_id=?").bind(creationId).first<{total:number}>();
   await db.prepare("INSERT INTO creation_events(creation_id,actor_id,event_type,version_number,likes_total,detail)VALUES(?,?,?,?,?,?)").bind(creationId,creatorId,version===1?"published":"updated",version,Number(likes?.total||0),changeNote).run();
   return version;

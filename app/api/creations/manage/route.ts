@@ -26,9 +26,14 @@ export async function POST(request: Request) {
   if (body.action === "delete") {
     const currentMedia = await db.prepare("SELECT object_key FROM creation_media WHERE creation_id=?").bind(body.creationId).all<{ object_key:string }>();
     const versions = await db.prepare("SELECT media_json FROM creation_versions WHERE creation_id=?").bind(body.creationId).all<{ media_json:string }>();
+    const documents = await db.prepare("SELECT object_key FROM creation_technical_files WHERE creation_id=?").bind(body.creationId).all<{object_key:string}>();
     const keys = mediaKeys(versions.results);
     for (const item of currentMedia.results) if (item.object_key?.startsWith("users/")) keys.add(item.object_key);
+    for (const file of documents.results) keys.add(file.object_key);
     await db.batch([
+      db.prepare("DELETE FROM creation_version_technical WHERE version_id IN (SELECT id FROM creation_versions WHERE creation_id=?)").bind(body.creationId),
+      db.prepare("DELETE FROM creation_technical_files WHERE creation_id=?").bind(body.creationId),
+      db.prepare("DELETE FROM creation_technical WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_likes WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_events WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_versions WHERE creation_id=?").bind(body.creationId),

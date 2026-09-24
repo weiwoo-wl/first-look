@@ -1,3 +1,4 @@
+import { normalizeTechnical, readTechnical } from "../../lib/technical";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { creations } from "../../../db/schema";
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
     const work = await db.prepare("SELECT id,slug,title,description,type,status,story,tags,product_url,creator_name,created_at,updated_at FROM creations WHERE slug=? AND visibility='published'").bind(slug).first<Record<string,unknown>>();
     if (!work) return Response.json({ error: "作品不存在" }, { status: 404 });
     const media = await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]);
-    return Response.json({ ...work, media });
+    return Response.json({ ...work, media, technical: await readTechnical(db,Number(work.id)) });
   }
   const rows = await db.prepare("SELECT id,slug,title,description,type,status,tags,product_url,creator_name,created_at,updated_at FROM creations WHERE visibility='published' ORDER BY created_at DESC").all();
   const enriched = await Promise.all(rows.results.map(async (work) => ({ ...work, media: await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]) })));
@@ -26,11 +27,16 @@ async function postCreation(request: Request) {
   if (!user) return Response.json({ error: "请先登录后再发布作品" }, { status: 401 });
   const db = getDb();
   await ensureCreationTables(runtime().DB!);
-  const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number; visibility?: "published" | "private" };
+  const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number; technical?: unknown; attachmentCount?: number; visibility?: "published" | "private" };
   if (!body.title?.trim() || !body.description?.trim() || !body.type?.trim()) {
     return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
   }
 
+  let technical;
+  try { technical = normalizeTechnical(body.technical); }
+  catch (error) { return Response.json({error: error instanceof Error ? error.message : "技术分享格式不正确"},{status:400}); }
+  if (body.attachmentCount !== undefined && (!Number.isInteger(body.attachmentCount) || body.attachmentCount < 0 || body.attachmentCount > 5)) return Response.json({error:"技术资料最多 5 个"},{status:400});
+  const pending = Boolean(body.mediaCount || body.attachmentCount);
   const existing = await db.select({ id: creations.id }).from(creations).where(eq(creations.title, body.title.trim())).limit(1);
   if (existing.length) return Response.json({ error: "这个作品已经发布过了" }, { status: 409 });
 
@@ -39,9 +45,10 @@ async function postCreation(request: Request) {
     slug, title: body.title.trim(), description: body.description.trim(), type: body.type,
     status: body.status || "早期测试", story: body.story || "", tags: parseTags(body.tags), productUrl: body.productUrl?.trim() || "", creatorId: user.id,
     creatorName: user.displayName,
-    visibility: body.mediaCount ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),
+    visibility: pending ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),
   }).returning();
-  if (!body.mediaCount) await createCreationVersion(runtime().DB!, creation.id, user.id, body.changeNote || "首次发布");
+  await runtime().DB!.prepare("INSERT INTO creation_technical(creation_id,notes,links_json) VALUES(?,?,?)").bind(creation.id,technical.notes,JSON.stringify(technical.links)).run();
+  if (!pending) await createCreationVersion(runtime().DB!, creation.id, user.id, body.changeNote || "首次发布");
   return Response.json(creation, { status: 201 });
 }
 
