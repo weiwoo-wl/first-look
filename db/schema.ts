@@ -13,6 +13,7 @@ export const creations = sqliteTable("creations", {
   productUrl: text("product_url").notNull().default(""),
   creatorId: text("creator_id").notNull(),
   creatorName: text("creator_name").notNull(),
+  contactEmailVisible: integer("contact_email_visible").notNull().default(0),
   mediaKey: text("media_key"),
   mediaType: text("media_type"),
   visibility: text("visibility").notNull().default("published"),

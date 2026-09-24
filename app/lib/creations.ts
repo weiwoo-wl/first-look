@@ -18,6 +18,7 @@ export async function ensureCreationTables(db: CreationDb) {
     db.prepare("CREATE TABLE IF NOT EXISTS creation_views (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,visitor_key TEXT NOT NULL,bucket TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,UNIQUE(creation_id,visitor_key,bucket))"),
     db.prepare("CREATE TABLE IF NOT EXISTS creation_shares (id INTEGER PRIMARY KEY AUTOINCREMENT,creation_id INTEGER NOT NULL,source TEXT NOT NULL DEFAULT 'copy-link',created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
   ]);
+  try { await db.prepare("ALTER TABLE creations ADD COLUMN contact_email_visible INTEGER NOT NULL DEFAULT 0").run(); } catch {}
   for (const statement of ["ALTER TABLE creations ADD COLUMN tags TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN product_url TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN updated_at TEXT"]) { try { await db.prepare(statement).run(); } catch {} }
   try { await db.prepare("UPDATE creations SET updated_at=created_at WHERE updated_at IS NULL").run(); } catch {}
 }

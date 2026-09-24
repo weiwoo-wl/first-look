@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   await ensureCreationTables(db);
   const mediaSql = "SELECT id,object_key,media_type,mime_type,size,sort_order FROM creation_media WHERE creation_id=? ORDER BY sort_order";
   if (slug) {
-    const work = await db.prepare("SELECT id,slug,title,description,type,status,story,tags,product_url,creator_name,created_at,updated_at FROM creations WHERE slug=? AND visibility='published'").bind(slug).first<Record<string,unknown>>();
+    const work = await db.prepare("SELECT c.id,c.slug,c.title,c.description,c.type,c.status,c.story,c.tags,c.product_url,c.creator_name,c.created_at,c.updated_at,CASE WHEN c.contact_email_visible=1 THEN u.email ELSE NULL END AS contact_email FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.slug=? AND c.visibility='published'").bind(slug).first<Record<string,unknown>>();
     if (!work) return Response.json({ error: "作品不存在" }, { status: 404 });
     const media = await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]);
     return Response.json({ ...work, media, technical: await readTechnical(db,Number(work.id)) });
@@ -27,7 +27,7 @@ async function postCreation(request: Request) {
   if (!user) return Response.json({ error: "请先登录后再发布作品" }, { status: 401 });
   const db = getDb();
   await ensureCreationTables(runtime().DB!);
-  const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number; technical?: unknown; attachmentCount?: number; visibility?: "published" | "private" };
+  const body = await request.json() as { title?: string; description?: string; type?: string; status?: string; story?: string; tags?: string; productUrl?: string; changeNote?: string; mediaCount?: number; technical?: unknown; attachmentCount?: number; visibility?: "published" | "private"; contactEmailVisible?: boolean };
   const title = body.title?.trim() || "", description = body.description?.trim() || "", type = body.type?.trim() || "";
   if (!title || !description || !type) return Response.json({ error: "作品名称、介绍和类型不能为空" }, { status: 400 });
   if (title.length < 2 || title.length > 80) return Response.json({ error: "作品名称需要为 2 到 80 个字" }, { status: 400 });
@@ -47,7 +47,7 @@ async function postCreation(request: Request) {
   const [creation] = await db.insert(creations).values({
     slug, title, description, type,
     status: body.status || "早期测试", story: body.story || "", tags: parseTags(body.tags), productUrl: body.productUrl?.trim() || "", creatorId: user.id,
-    creatorName: user.displayName,
+    creatorName: user.displayName, contactEmailVisible: body.contactEmailVisible ? 1 : 0,
     visibility: pending ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),
   }).returning();
   await runtime().DB!.prepare("INSERT INTO creation_technical(creation_id,notes,links_json) VALUES(?,?,?)").bind(creation.id,technical.notes,JSON.stringify(technical.links)).run();
