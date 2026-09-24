@@ -1,8 +1,9 @@
+import { UPLOAD_LIMITS } from "./upload-limits";
 export type TechnicalLink = { title: string; url: string; description: string };
 export type TechnicalFile = { object_key: string; name: string; size: number };
 export type Technical = { notes: string; links: TechnicalLink[]; files: TechnicalFile[] };
 export const TECHNICAL_EXTENSIONS = [".md", ".txt", ".json", ".yaml", ".yml", ".py", ".js", ".ts", ".sh", ".zip"];
-export const TECHNICAL_MAX_SIZE = 10 * 1024 * 1024;
+export const TECHNICAL_MAX_SIZE = UPLOAD_LIMITS.technical;
 export function allowedTechnicalName(name: string) {
   return TECHNICAL_EXTENSIONS.some(extension => name.toLowerCase().endsWith(extension));
 }

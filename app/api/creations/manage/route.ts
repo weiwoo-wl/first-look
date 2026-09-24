@@ -1,3 +1,4 @@
+import { ensureStorage, cleanupExpired, type UploadReservation } from "../../../lib/storage-quota";
 import { currentUser, runtime, sameOrigin } from "../../../lib/auth";
 import { ensureCreationTables, recordCreationEvent } from "../../../lib/creations";
 
@@ -23,14 +24,26 @@ export async function POST(request: Request) {
   const product = await db.prepare("SELECT id,visibility FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id).first<{ id:number; visibility:string }>();
   if (!product) return Response.json({ error: "找不到这个产品" }, { status: 404 });
 
+  if (["finalizing","deleting"].includes(product.visibility)) return Response.json({error:"作品正在保存或删除，请稍后重试"},{status:409});
   if (body.action === "delete") {
+    if(!bucket)return Response.json({error:"文件存储暂不可用，请稍后再删除"},{status:503});
+    try{await ensureStorage(db,bucket);await cleanupExpired(db,bucket);}catch{return Response.json({error:"正在核对存储空间，请稍后重试"},{status:503});}
+    const claim=await db.prepare("UPDATE creations SET visibility='deleting' WHERE id=? AND creator_id=? AND visibility=? AND NOT EXISTS(SELECT 1 FROM storage_objects WHERE creation_id=? AND state!='stored')").bind(body.creationId,user.id,product.visibility,body.creationId).run();
+    if(!claim.meta.changes)return Response.json({error:"还有上传未结束，请等待或取消上传后再删除"},{status:409});
+    try {
+    const stored=await db.prepare("SELECT * FROM storage_objects WHERE creation_id=?").bind(body.creationId).all<UploadReservation>();
     const currentMedia = await db.prepare("SELECT object_key FROM creation_media WHERE creation_id=?").bind(body.creationId).all<{ object_key:string }>();
     const versions = await db.prepare("SELECT media_json FROM creation_versions WHERE creation_id=?").bind(body.creationId).all<{ media_json:string }>();
     const documents = await db.prepare("SELECT object_key FROM creation_technical_files WHERE creation_id=?").bind(body.creationId).all<{object_key:string}>();
     const keys = mediaKeys(versions.results);
     for (const item of currentMedia.results) if (item.object_key?.startsWith("users/")) keys.add(item.object_key);
     for (const file of documents.results) keys.add(file.object_key);
+    for(const item of stored.results)keys.add(item.object_key);
+    try {for(let offset=0;offset<keys.size;offset+=100)await bucket.delete([...keys].slice(offset,offset+100));}
+    catch {await db.prepare("UPDATE creations SET visibility=? WHERE id=? AND visibility='deleting'").bind(product.visibility,body.creationId).run();return Response.json({error:"文件尚未清理成功，空间暂未释放，请稍后重试"},{status:503});}
     await db.batch([
+      db.prepare("DELETE FROM storage_parts WHERE object_key IN (SELECT object_key FROM storage_objects WHERE creation_id=?)").bind(body.creationId),
+      db.prepare("DELETE FROM storage_objects WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_version_technical WHERE version_id IN (SELECT id FROM creation_versions WHERE creation_id=?)").bind(body.creationId),
       db.prepare("DELETE FROM creation_technical_files WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_technical WHERE creation_id=?").bind(body.creationId),
@@ -40,11 +53,8 @@ export async function POST(request: Request) {
       db.prepare("DELETE FROM creation_media WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id),
     ]);
-    if (bucket && keys.size) {
-      try { await bucket.delete([...keys]); }
-      catch (error) { console.error("[creations/manage] deleted product but media cleanup failed", { creationId: body.creationId, error: String(error) }); }
-    }
     return Response.json({ ok: true, deleted: true });
+    } finally {await db.prepare("UPDATE creations SET visibility=? WHERE id=? AND visibility=\'deleting\'").bind(product.visibility,body.creationId).run();}
   }
 
   if (["draft", "private_pending"].includes(product.visibility)) return Response.json({ error: "作品还没有完成发布" }, { status: 409 });
