@@ -28,7 +28,7 @@ function ProductCover({ product, active, color }: { product: Product; active: bo
     else { video.pause(); video.currentTime = 0; }
   }, [active]);
   return <div className="product-cover" style={{ background: color }}>
-    {media?.media_type === "video" ? <video ref={videoRef} src={mediaSource(media)} muted playsInline preload="metadata" /> : media ? <img src={mediaSource(media)} alt={`${product.title} 产品封面`} /> : <div className="product-cover-placeholder"><small>{product.type}</small><strong>{product.title}</strong><span>FIRST LOOK</span></div>}
+    {media?.media_type === "video" ? <video ref={videoRef} src={mediaSource(media)} muted playsInline preload="auto" onLoadedData={(event) => { if (event.currentTarget.currentTime === 0 && event.currentTarget.duration > .1) event.currentTarget.currentTime = .1; }} /> : media ? <img src={mediaSource(media)} alt={`${product.title} 产品封面`} /> : <div className="product-cover-placeholder"><small>{product.type}</small><strong>{product.title}</strong><span>FIRST LOOK</span></div>}
     {media?.media_type === "video" && <span className="product-video-mark"><Play size={14} fill="currentColor" /></span>}
   </div>;
 }
