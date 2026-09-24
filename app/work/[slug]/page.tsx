@@ -3,5 +3,5 @@
 import ProductDetail from "./product-detail";
 
 export default function WorkPage({ params }: { params: Promise<{ slug: string }> }) {
-  return <ProductDetail params={params} />;
+  return <ProductDetail />;
 }

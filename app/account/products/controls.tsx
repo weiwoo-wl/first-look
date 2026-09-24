@@ -32,7 +32,10 @@ export default function ProductControls({ id, slug, title, visibility, onVisibil
     setError("");
     try {
       const response = await fetch("/api/creations/manage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId: id, action }) });
-      const result = await response.json() as { error?: string; visibility?: string };
+      const text = await response.text();
+      let result: { error?: string; visibility?: string } = {};
+      try { result = text ? JSON.parse(text) : {}; } catch {}
+      if (!response.ok && !result.error) result.error = response.status >= 500 ? "服务器暂时无法完成操作，请稍后重试" : "操作失败";
       if (!response.ok) throw Error(result.error || "操作失败");
       if (action === "delete") onDeleted();
       else if (result.visibility) onVisibilityChange(result.visibility);

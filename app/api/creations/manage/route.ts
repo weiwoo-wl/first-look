@@ -1,3 +1,4 @@
+import { ensureAdminTables } from "../../../lib/admin";
 import { ensureStorage, cleanupExpired, type UploadReservation } from "../../../lib/storage-quota";
 import { currentUser, runtime, sameOrigin } from "../../../lib/auth";
 import { ensureCreationTables, recordCreationEvent } from "../../../lib/creations";
@@ -14,6 +15,7 @@ function mediaKeys(rows: { media_json?: unknown }[]) {
 }
 
 export async function POST(request: Request) {
+  try {
   if (!sameOrigin(request)) return Response.json({ error: "请求来源无效" }, { status: 403 });
   const user = await currentUser(request), { DB: db, MEDIA: bucket } = runtime();
   if (!user) return Response.json({ error: "请先登录" }, { status: 401 });
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
   if (["finalizing","deleting"].includes(product.visibility)) return Response.json({error:"作品正在保存或删除，请稍后重试"},{status:409});
   if (body.action === "delete") {
     if(!bucket)return Response.json({error:"文件存储暂不可用，请稍后再删除"},{status:503});
-    try{await ensureStorage(db,bucket);await cleanupExpired(db,bucket);}catch{return Response.json({error:"正在核对存储空间，请稍后重试"},{status:503});}
+    try{await ensureStorage(db,bucket);await ensureAdminTables(db);await cleanupExpired(db,bucket);}catch{return Response.json({error:"正在核对存储空间，请稍后重试"},{status:503});}
     const claim=await db.prepare("UPDATE creations SET visibility='deleting' WHERE id=? AND creator_id=? AND visibility=? AND NOT EXISTS(SELECT 1 FROM storage_objects WHERE creation_id=? AND state!='stored')").bind(body.creationId,user.id,product.visibility,body.creationId).run();
     if(!claim.meta.changes)return Response.json({error:"还有上传未结束，请等待或取消上传后再删除"},{status:409});
     try {
@@ -48,6 +50,11 @@ export async function POST(request: Request) {
       db.prepare("DELETE FROM creation_technical_files WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_technical WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_likes WHERE creation_id=?").bind(body.creationId),
+      db.prepare("DELETE FROM creation_favorites WHERE creation_id=?").bind(body.creationId),
+      db.prepare("DELETE FROM creation_views WHERE creation_id=?").bind(body.creationId),
+      db.prepare("DELETE FROM creation_shares WHERE creation_id=?").bind(body.creationId),
+      db.prepare("DELETE FROM admin_hidden_creations WHERE creation_id=?").bind(body.creationId),
+      db.prepare("DELETE FROM site_reports WHERE target_type='creation' AND target_id=?").bind(String(body.creationId)),
       db.prepare("DELETE FROM creation_events WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_versions WHERE creation_id=?").bind(body.creationId),
       db.prepare("DELETE FROM creation_media WHERE creation_id=?").bind(body.creationId),
@@ -67,4 +74,8 @@ export async function POST(request: Request) {
   const detail = body.action === "publicize" ? "产品公开上架" : visibility === "published" ? "产品重新上架" : "产品下架";
   await recordCreationEvent(db, body.creationId, user.id, eventType, detail);
   return Response.json({ ok: true, visibility });
+  } catch (error) {
+    console.error("[creations/manage]", error);
+    return Response.json({error:"服务器暂时无法完成操作，请稍后重试"},{status:500});
+  }
 }
