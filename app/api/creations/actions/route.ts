@@ -1,11 +1,13 @@
 import { currentUser, runtime, sameOrigin } from "../../../lib/auth";
 import { ensureCreationTables, recordCreationEvent } from "../../../lib/creations";
+import { ensureCreatorProfileTables } from "../../../lib/creator-profile";
 
 export async function GET(request: Request) {
   const db = runtime().DB, creationId = Number(new URL(request.url).searchParams.get("creationId"));
   if (!db || !creationId) return Response.json({ likes: 0, favorites: 0, shares: 0, views: 0, liked: false, favorited: false });
   await ensureCreationTables(db);
-  const product = await db.prepare("SELECT c.id,c.slug,CASE WHEN c.contact_email_visible=1 THEN u.email ELSE NULL END AS contact_email FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.id=? AND c.visibility='published'").bind(creationId).first<{ id: number; slug: string; contact_email: string | null }>();
+  await ensureCreatorProfileTables(db);
+  const product = await db.prepare("SELECT c.id,c.slug,CASE WHEN u.contact_enabled=1 THEN u.email ELSE NULL END AS contact_email FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.id=? AND c.visibility='published'").bind(creationId).first<{ id: number; slug: string; contact_email: string | null }>();
   if (!product) return Response.json({ error: "产品不存在" }, { status: 404 });
   const user = await currentUser(request);
   const [likes, favorites, shares, views] = await Promise.all([

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import MediaCreateForm from "./media-create-form";
-import ContactEmailOption from "./contact-email-option";
 
 type GateState = "checking" | "ready" | "error";
 
@@ -28,7 +27,7 @@ export default function CreatePage() {
 
   if (state === "checking") return <Gate message="正在检查登录状态…" />;
   if (state === "error") return <Gate message="暂时无法确认登录状态" retry />;
-  return <><MediaCreateForm /><ContactEmailOption /></>;
+  return <MediaCreateForm />;
 }
 
 function Gate({ message, retry = false }: { message: string; retry?: boolean }) {

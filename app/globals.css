@@ -529,3 +529,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) { .admin-loading-bar::after { animation: none; } }
+
+.input { width: 100%; border: 1px solid rgba(0,0,0,.15); border-radius: .75rem; background: white; padding: .75rem 1rem; outline: none; }
+.input:focus { border-color: #171717; }
