@@ -1,5 +1,5 @@
 import { normalizeTechnical, readTechnical } from "../../lib/technical";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { creations } from "../../../db/schema";
 import { currentUser, runtime } from "../../lib/auth";
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const media = await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]);
     return Response.json({ ...work, media, technical: await readTechnical(db,Number(work.id)) });
   }
-  const rows = await db.prepare("SELECT id,slug,title,description,type,status,tags,product_url,creator_name,created_at,updated_at FROM creations WHERE visibility='published' ORDER BY created_at DESC").all();
+  const rows = await db.prepare("SELECT c.id,c.slug,c.title,c.description,c.type,c.status,c.tags,c.product_url,c.creator_name,c.created_at,c.updated_at,(SELECT COUNT(*) FROM creation_likes l WHERE l.creation_id=c.id) AS likes,(SELECT COUNT(*) FROM creation_favorites f WHERE f.creation_id=c.id) AS favorites,(SELECT COUNT(*) FROM creation_shares s WHERE s.creation_id=c.id) AS shares,(SELECT COUNT(*) FROM creation_views v WHERE v.creation_id=c.id) AS views FROM creations c WHERE c.visibility='published' ORDER BY c.created_at DESC").all();
   const enriched = await Promise.all(rows.results.map(async (work) => ({ ...work, media: await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]) })));
   return Response.json(enriched);
 }
