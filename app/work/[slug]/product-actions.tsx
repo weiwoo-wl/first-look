@@ -21,8 +21,8 @@ export default function ProductActions({ creationId, slug }: { creationId: numbe
     let source: "copy-link" | "native-share" = "copy-link";
     if (typeof navigator.share === "function") {
       try {
-        // Keep the handoff small; the destination can load the product's rich link preview.
-        await navigator.share({ title: shareTitle, url: shareUrl });
+        // WeChat's iOS share extension can be sensitive to URL payloads; pass a plain text link.
+        await navigator.share({ text: `${shareTitle}\n${shareUrl}` });
         source = "native-share";
       } catch (shareError) {
         if (shareError instanceof DOMException && shareError.name === "AbortError") return;
