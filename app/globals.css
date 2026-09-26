@@ -370,6 +370,9 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
 .product-center-detail p { max-width: 540px; margin: 10px auto 0; color: rgba(23,23,23,.55); font-size: 13px; line-height: 1.6; }
 .product-center-detail small { display: block; margin-top: 9px; color: rgba(23,23,23,.43); font-size: 10px; }
 .product-cover { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 5px; box-shadow: 0 15px 34px rgba(25,25,20,.18), inset 0 0 0 1px rgba(255,255,255,.18); }
+.product-external-badge { position: absolute; top: 9px; left: 9px; z-index: 2; padding: 6px 9px; border: 1px solid rgba(255,255,255,.48); border-radius: 999px; background: rgba(247,247,244,.88); color: rgba(23,23,23,.72); font-size: 9px; font-weight: 650; backdrop-filter: blur(8px); }
+.product-external-links { display: flex; justify-content: center; gap: 16px; margin-top: 10px; font-size: 11px; font-weight: 650; }
+.product-external-links a { border-bottom: 1px solid rgba(23,23,23,.35); padding-bottom: 2px; }
 .product-stack-item.is-active .product-cover { box-shadow: 0 28px 54px rgba(25,25,20,.24), inset 0 0 0 1px rgba(255,255,255,.2); }
 .product-stack-empty-item { pointer-events: none; }
 .product-stack-empty-item .product-stack-empty { transform: none; }
