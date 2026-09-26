@@ -2,10 +2,12 @@
 import { Check, Copy, Heart, Share2, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import ReportButton from "./report-button";
+import ProductSharePoster from "./product-share-poster";
 type State = { likes: number; favorites: number; shares: number; views: number; liked: boolean; favorited: boolean; contactEmail?: string | null; title?: string; description?: string };
-export default function ProductActions({ creationId, slug }: { creationId: number; slug: string }) {
+type PosterMedia = { object_key: string; media_type: string };
+export default function ProductActions({ creationId, slug, title, description, media }: { creationId: number; slug: string; title: string; description: string; media: PosterMedia[] }) {
   const [state, setState] = useState<State>({ likes: 0, favorites: 0, shares: 0, views: 0, liked: false, favorited: false }), [shareStatus, setShareStatus] = useState<"shared" | "copied" | "mobile-copied" | null>(null), [error, setError] = useState("");
-  const [contactOpen, setContactOpen] = useState(false), [emailCopied, setEmailCopied] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false), [emailCopied, setEmailCopied] = useState(false), [posterOpen, setPosterOpen] = useState(false);
   useEffect(() => {
     Promise.all([
       fetch(`/api/creations/actions?creationId=${creationId}`).then((response) => response.ok ? response.json() as Promise<State> : Promise.reject()),
@@ -44,11 +46,13 @@ export default function ProductActions({ creationId, slug }: { creationId: numbe
     <div className="flex flex-wrap items-center gap-3">
       <button onClick={like} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.liked ? "bg-[#e15d36] text-white" : "bg-black text-white"}`}><Heart size={16} fill={state.liked ? "currentColor" : "none"} />{state.liked ? "已喜欢" : "喜欢"}<span className="text-xs opacity-65">{state.likes}</span></button>
       <button onClick={favorite} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.favorited ? "bg-[#e15d36] text-white" : "border border-black/15 bg-white text-black"}`}><Star size={16} fill={state.favorited ? "currentColor" : "none"} />{state.favorited ? "已收藏" : "收藏"}<span className="text-xs opacity-65">{state.favorites}</span></button>
-      <button onClick={share} className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">{shareStatus ? <Check size={16} /> : <Share2 size={16} />}{shareStatus === "shared" ? "已打开分享" : shareStatus === "mobile-copied" ? "已复制，打开微信粘贴" : shareStatus === "copied" ? "链接已复制" : "分享"}</button>
+      <button type="button" onClick={() => setPosterOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-[#e15d36] px-5 py-3 text-sm font-medium text-white"><Share2 size={16} />分享海报</button>
+      <button onClick={share} className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">{shareStatus ? <Check size={16} /> : <Share2 size={16} />}{shareStatus === "shared" ? "已打开分享" : shareStatus === "mobile-copied" ? "已复制，打开微信粘贴" : shareStatus === "copied" ? "链接已复制" : "分享链接"}</button>
       {state.contactEmail && <button type="button" onClick={() => setContactOpen((open) => !open)} aria-expanded={contactOpen} className="inline-flex items-center rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">联系创作者</button>}
       <ReportButton creationId={creationId} />
     </div>
     {contactOpen && state.contactEmail && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white p-4"><span className="select-all break-all text-sm font-medium">{state.contactEmail}</span><button type="button" onClick={() => void copyContactEmail()} className="inline-flex items-center gap-2 rounded-full border border-black/15 px-4 py-2 text-xs font-medium">{emailCopied ? <Check size={14} /> : <Copy size={14} />}{emailCopied ? "已复制" : "复制邮箱"}</button></div>}
+    {posterOpen && <ProductSharePoster open={posterOpen} onClose={() => setPosterOpen(false)} title={title || state.title || "First Look 产品"} description={description || state.description || "发现一件新作品"} slug={slug} media={media} onShared={() => { fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source: "native-share" }) }).then((response) => { if (response.ok) setState((current) => ({ ...current, shares: current.shares + 1 })); }).catch(() => undefined); }} />}
     <div className="mt-4 flex items-center gap-4 text-xs text-black/45"><span>{state.views} 次浏览</span><span>{state.shares} 次分享</span></div>
     {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
   </div>;
