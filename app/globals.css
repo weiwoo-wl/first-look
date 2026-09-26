@@ -329,10 +329,10 @@ body {
   box-shadow: 0 24px 70px rgba(22, 22, 19, .07);
 }
 .product-hero-row { display: flex; align-items: center; gap: 32px; }
-.product-hero-copy { min-width: 0; flex: 1 1 62%; }
-.product-hero-logo-zone { position: relative; min-width: 0; flex: 1 1 38%; height: 240px; display: flex; align-items: center; }
+.product-hero-copy { min-width: 0; flex: 1 1 54%; }
+.product-hero-logo-zone { position: relative; min-width: 0; flex: 1 1 46%; height: 260px; display: flex; align-items: center; }
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
-.product-hero-logo span { position: relative; display: block; width: max-content; color: transparent; background: url('/first-look-snow-mountain.png') center 48% / cover no-repeat; background-clip: text; -webkit-background-clip: text; font-family: "Bahnschrift SemiCondensed", "Arial Narrow", Arial, sans-serif; font-size: clamp(68px, 7.5vw, 112px); font-weight: 750; letter-spacing: -.12em; line-height: .92; white-space: nowrap; transform: scaleX(.82); transform-origin: left center; }
+.product-hero-logo span { position: relative; display: block; width: max-content; color: transparent; background: url('/first-look-snow-mountain.png') center 48% / cover no-repeat; background-clip: text; -webkit-background-clip: text; font-family: "Bahnschrift SemiCondensed", "Arial Narrow", Arial, sans-serif; font-size: clamp(74px, 10vw, 164px); font-weight: 750; letter-spacing: -.12em; line-height: .92; white-space: nowrap; transform: scaleX(.8); transform-origin: left center; }
 .product-hero-logo span::after { position: absolute; inset: 0; content: attr(data-wordmark); color: transparent; background: linear-gradient(112deg, rgba(255,105,79,.12), rgba(244,182,77,.3) 24%, rgba(108,207,163,.25) 48%, rgba(107,156,255,.35) 72%, rgba(179,123,255,.2)); background-size: 220% 100%; background-clip: text; -webkit-background-clip: text; animation: first-look-spectrum 8s linear infinite; pointer-events: none; }
 @keyframes first-look-spectrum { to { background-position: 220% 0; } }
 @media (hover: none), (pointer: coarse) { .product-hero-logo { clip-path: none !important; } }
@@ -425,6 +425,12 @@ body {
   .product-selected-side { min-width: 0; display: grid; grid-template-columns: 1fr auto; align-items: end; }
   .product-selected-side small { display: none; }
   .product-selected-side a { margin-top: 0; }
+}
+
+@media (min-width: 701px) and (max-width: 1000px) {
+  .product-hero-row { gap: 18px; }
+  .product-hero-logo-zone { height: 180px; }
+  .product-hero-logo span { font-size: clamp(54px, 8.5vw, 86px); transform: scaleX(.78); }
 }
 
 @media (prefers-reduced-motion: reduce) {
