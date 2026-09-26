@@ -1,7 +1,6 @@
 "use client";
 
 import { ExternalLink, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -49,7 +48,7 @@ export default function ProductControls({ id, slug, title, visibility, onVisibil
   return <>
     <div className="flex flex-wrap items-center gap-2">
       {["published", "private", "unpublished"].includes(visibility) && <button disabled={busy} onClick={() => void request(visibility === "published" ? "unpublish" : visibility === "private" ? "publicize" : "republish")} className="rounded-full border border-black/12 px-3 py-2 text-xs disabled:opacity-50">{busy ? "处理中…" : visibility === "published" ? "下架产品" : visibility === "private" ? "公开上架" : "重新上架"}</button>}
-      {visibility === "published" && <Link href={`/work/${encodeURIComponent(slug)}`} aria-label={`查看 ${title}`} className="rounded-full border border-black/12 p-2"><ExternalLink size={15} /></Link>}
+      {visibility === "published" && <a href={`/work/${encodeURIComponent(slug)}`} aria-label={`查看 ${title}`} title="查看产品" className="inline-flex size-10 items-center justify-center rounded-full border border-black/12"><ExternalLink size={15} /></a>}
       <button disabled={busy} onClick={() => { setError(""); setConfirming(true); }} className="inline-flex items-center gap-1 rounded-full border border-red-700/20 px-3 py-2 text-xs text-red-700 disabled:opacity-50"><Trash2 size={13} />删除产品</button>
       {error && <span role="alert" className="w-full text-xs text-red-600">{error}</span>}
     </div>
