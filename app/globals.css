@@ -330,9 +330,9 @@ body {
 }
 .product-hero-row { display: flex; align-items: center; gap: 32px; }
 .product-hero-copy { min-width: 0; flex: 1 1 62%; }
-.product-hero-logo-zone { position: relative; min-width: 0; flex: 1 1 38%; height: 150px; display: flex; align-items: center; }
+.product-hero-logo-zone { position: relative; min-width: 0; flex: 1 1 38%; height: 190px; display: flex; align-items: center; }
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
-.product-hero-logo span { display: block; width: max-content; color: transparent; background: linear-gradient(105deg, #ff694f 0%, #f4b64d 22%, #6ccfa3 43%, #6b9cff 64%, #b37bff 82%, #ff694f 100%); background-size: 220% 100%; background-clip: text; -webkit-background-clip: text; font-size: clamp(30px, 4.15vw, 64px); font-weight: 850; letter-spacing: -.085em; line-height: 1; white-space: nowrap; animation: first-look-spectrum 7s linear infinite; }
+.product-hero-logo span { display: block; width: max-content; color: transparent; background: linear-gradient(105deg, #ff694f 0%, #f4b64d 22%, #6ccfa3 43%, #6b9cff 64%, #b37bff 82%, #ff694f 100%); background-size: 220% 100%; background-clip: text; -webkit-background-clip: text; font-family: "Bahnschrift SemiCondensed", "Arial Narrow", Arial, sans-serif; font-size: clamp(48px, 6vw, 88px); font-weight: 750; letter-spacing: -.095em; line-height: .92; white-space: nowrap; animation: first-look-spectrum 7s linear infinite; }
 @keyframes first-look-spectrum { to { background-position: 220% 0; } }
 @media (hover: none), (pointer: coarse) { .product-hero-logo { clip-path: none !important; } }
 @media (prefers-reduced-motion: reduce) { .product-hero-logo span { animation: none; } }
