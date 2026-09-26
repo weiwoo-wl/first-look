@@ -328,10 +328,13 @@ body {
   background: #efefeb;
   box-shadow: 0 24px 70px rgba(22, 22, 19, .07);
 }
+#top { padding-top: 32px; padding-bottom: 24px; }
+main > section:has(.product-browser-top) { padding-bottom: 40px; }
+main > section:has(.product-browser-top) > div[aria-label="作品分类"] { margin-bottom: 12px; }
 .product-hero-row { display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(340px, 1fr); align-items: center; gap: 32px; }
 .product-hero-copy { min-width: 0; }
 .product-hero-copy h1 { font-size: clamp(42px, 3.8vw, 62px); }
-.product-hero-logo-zone { position: relative; min-width: 0; height: 260px; display: flex; align-items: center; }
+.product-hero-logo-zone { position: relative; min-width: 0; height: 210px; display: flex; align-items: center; }
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
 .product-hero-logo span { position: relative; display: block; width: max-content; color: transparent; background: url('/first-look-snow-mountain.png') center 48% / cover no-repeat; background-clip: text; -webkit-background-clip: text; font-family: "Bahnschrift SemiCondensed", "Arial Narrow", Arial, sans-serif; font-size: clamp(74px, 10vw, 164px); font-weight: 750; letter-spacing: -.12em; line-height: .92; white-space: nowrap; transform: scaleX(.8); transform-origin: left center; }
 .product-hero-logo span::after { position: absolute; inset: 0; content: attr(data-wordmark); color: transparent; background: linear-gradient(112deg, rgba(255,105,79,.12), rgba(244,182,77,.3) 24%, rgba(108,207,163,.25) 48%, rgba(107,156,255,.35) 72%, rgba(179,123,255,.2)); background-size: 220% 100%; background-clip: text; -webkit-background-clip: text; animation: first-look-spectrum 8s linear infinite; pointer-events: none; }
@@ -346,7 +349,7 @@ body {
 .product-browser-controls button:active { transform: scale(.96); }
 .product-browser-controls button:disabled { opacity: .28; }
 .product-browser-controls span { min-width: 45px; text-align: center; color: rgba(23,23,23,.45); font-size: 11px; }
-.product-stack { display: flex; align-items: flex-start; min-height: 540px; overflow-x: auto; overflow-y: hidden; padding: 74px 0 30px; scroll-snap-type: x mandatory; scroll-padding-inline: 30px; scrollbar-width: none; outline: none; }
+.product-stack { display: flex; align-items: flex-start; min-height: 430px; overflow-x: auto; overflow-y: hidden; padding: 52px 0 20px; scroll-snap-type: x mandatory; scroll-padding-inline: 30px; scrollbar-width: none; outline: none; }
 .product-stack::-webkit-scrollbar { display: none; }
 .product-stack:focus-visible { box-shadow: inset 0 0 0 2px #171717; }
 .product-stack-spacer { flex: 0 0 0; }
@@ -412,7 +415,7 @@ body {
   .product-browser-top { padding: 22px 18px 4px; }
   .product-browser-top p { display: none; }
   .product-browser-controls button { width: 34px; height: 34px; }
-  .product-stack { min-height: 480px; padding-top: 64px; }
+  .product-stack { min-height: 410px; padding-top: 48px; }
   .product-stack-spacer { flex-basis: 0; }
   .product-stack-item { flex-basis: 226px; margin-right: -48px; }
   .product-stack-link { transform: translateY(20px) scale(.92); }
