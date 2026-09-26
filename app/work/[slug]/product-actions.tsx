@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ReportButton from "./report-button";
 type State = { likes: number; favorites: number; shares: number; views: number; liked: boolean; favorited: boolean; contactEmail?: string | null; title?: string; description?: string };
 export default function ProductActions({ creationId, slug }: { creationId: number; slug: string }) {
-  const [state, setState] = useState<State>({ likes: 0, favorites: 0, shares: 0, views: 0, liked: false, favorited: false }), [shareStatus, setShareStatus] = useState<"shared" | "copied" | null>(null), [error, setError] = useState("");
+  const [state, setState] = useState<State>({ likes: 0, favorites: 0, shares: 0, views: 0, liked: false, favorited: false }), [shareStatus, setShareStatus] = useState<"copied" | "mobile-copied" | null>(null), [error, setError] = useState("");
   const [contactOpen, setContactOpen] = useState(false), [emailCopied, setEmailCopied] = useState(false);
   useEffect(() => {
     Promise.all([
@@ -17,24 +17,13 @@ export default function ProductActions({ creationId, slug }: { creationId: numbe
   async function favorite() { setError(""); const response = await fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "favorite" }) }); if (response.status === 401) { location.assign(`/login?next=${encodeURIComponent(`/work/${slug}`)}`); return; } const data = await response.json() as { favorited?: boolean; favorites?: number; error?: string }; if (!response.ok) { setError(data.error || "收藏失败"); return; } setState((current) => ({ ...current, favorited: Boolean(data.favorited), favorites: Number(data.favorites || 0) })); }
   async function share() {
     setError("");
-    let method: "native-share" | "copy-link" = "copy-link";
     const shareUrl = location.href, shareTitle = state.title || document.title, shareDescription = state.description || "在 First Look 发现了这个产品。";
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: shareTitle, text: `${shareDescription}\n\n在 First Look 发现：`, url: shareUrl });
-        method = "native-share";
-      } catch {
-        // Sharing may be unavailable or canceled. Fall back to a copyable link.
-      }
-    }
-    if (method === "copy-link") {
-      try { await navigator.clipboard.writeText(`${shareTitle}\n${shareDescription}\n\n在 First Look 查看：\n${shareUrl}`); }
-      catch { setError("暂时无法分享，请手动复制当前网址"); return; }
-    }
-    const response = await fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source: method }) }).catch(() => null);
+    try { await navigator.clipboard.writeText(`${shareTitle}\n${shareDescription}\n\n来自 First Look · firstlooklab.cn\n${shareUrl}`); }
+    catch { setError("复制失败，请长按当前网址复制后在微信发送"); return; }
+    const response = await fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source: "copy-link" }) }).catch(() => null);
     if (response?.ok) setState((current) => ({ ...current, shares: current.shares + 1 }));
-    setShareStatus(method === "native-share" ? "shared" : "copied");
-    setTimeout(() => setShareStatus(null), 1800);
+    setShareStatus(/android|iphone|ipad|ipod/i.test(navigator.userAgent) ? "mobile-copied" : "copied");
+    setTimeout(() => setShareStatus(null), 3500);
   }
   async function copyContactEmail() { if (!state.contactEmail) return; try { await navigator.clipboard.writeText(state.contactEmail); setEmailCopied(true); setTimeout(() => setEmailCopied(false), 1800); } catch { setError("复制失败，请手动选择邮箱地址复制"); } }
 
@@ -42,7 +31,7 @@ export default function ProductActions({ creationId, slug }: { creationId: numbe
     <div className="flex flex-wrap items-center gap-3">
       <button onClick={like} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.liked ? "bg-[#e15d36] text-white" : "bg-black text-white"}`}><Heart size={16} fill={state.liked ? "currentColor" : "none"} />{state.liked ? "已喜欢" : "喜欢"}<span className="text-xs opacity-65">{state.likes}</span></button>
       <button onClick={favorite} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.favorited ? "bg-[#e15d36] text-white" : "border border-black/15 bg-white text-black"}`}><Star size={16} fill={state.favorited ? "currentColor" : "none"} />{state.favorited ? "已收藏" : "收藏"}<span className="text-xs opacity-65">{state.favorites}</span></button>
-      <button onClick={share} className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">{shareStatus ? <Check size={16} /> : <Share2 size={16} />}{shareStatus === "shared" ? "已分享" : shareStatus === "copied" ? "分享内容已复制" : "分享"}</button>
+      <button onClick={share} className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">{shareStatus ? <Check size={16} /> : <Share2 size={16} />}{shareStatus === "mobile-copied" ? "已复制，打开微信粘贴" : shareStatus === "copied" ? "分享内容已复制" : "分享"}</button>
       {state.contactEmail && <button type="button" onClick={() => setContactOpen((open) => !open)} aria-expanded={contactOpen} className="inline-flex items-center rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">联系创作者</button>}
       <ReportButton creationId={creationId} />
     </div>
