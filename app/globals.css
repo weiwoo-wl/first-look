@@ -422,7 +422,7 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
   .product-browser-top { padding: 22px 18px 4px; }
   .product-browser-top p { display: none; }
   .product-browser-controls button { width: 34px; height: 34px; }
-  .product-stack { min-height: 410px; padding-top: 48px; }
+  .product-stack { min-height: 410px; padding-top: 48px; scroll-padding-inline: 18px; overscroll-behavior-x: contain; touch-action: pan-x; -webkit-overflow-scrolling: touch; }
   .product-stack-spacer { flex-basis: 0; }
   .product-stack-item { flex-basis: 226px; margin-right: -48px; }
   .product-stack-link { transform: translateY(20px) scale(.92); }
@@ -436,6 +436,22 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
   .product-selected-side { min-width: 0; display: grid; grid-template-columns: 1fr auto; align-items: end; }
   .product-selected-side small { display: none; }
   .product-selected-side a { margin-top: 0; }
+}
+
+@media (max-width: 420px) {
+  #top { padding-top: 24px; }
+  .product-hero-copy h1 { font-size: 37px; line-height: 1.04; }
+  main > section:has(.product-browser-top) { padding-inline: 16px; }
+  .product-browser-top { align-items: center; padding-inline: 14px; }
+  .product-browser-top h2 { font-size: 21px; }
+  .product-browser-controls { gap: 7px; }
+  .product-browser-controls span { min-width: 39px; font-size: 10px; }
+  .product-stack { min-height: 390px; padding-top: 42px; }
+  .product-stack-item { flex-basis: 204px; margin-right: -38px; }
+  .product-stack-link { transform: translateY(18px) scale(.92); }
+  .product-stack-item.is-active .product-stack-link { transform: translateY(-18px) scale(1.03); }
+  .product-card-detail { width: 204px; }
+  .product-card-detail p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 }
 
 @media (min-width: 701px) and (max-width: 1000px) {
