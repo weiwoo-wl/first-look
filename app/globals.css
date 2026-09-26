@@ -328,6 +328,12 @@ body {
   background: #efefeb;
   box-shadow: 0 24px 70px rgba(22, 22, 19, .07);
 }
+.product-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+.product-hero-logo-zone { position: relative; flex: 0 0 clamp(190px, 22vw, 300px); height: 150px; display: flex; align-items: center; justify-content: flex-start; }
+.product-hero-logo { display: flex; align-items: center; gap: 12px; width: 100%; transition: clip-path .08s linear; }
+.product-hero-logo img { width: 64px; height: 64px; object-fit: contain; background: linear-gradient(125deg, #ff694f, #f4b64d 27%, #6ccfa3 52%, #6b9cff 76%, #b37bff); -webkit-mask: url('/koi-logo.png') center / contain no-repeat; mask: url('/koi-logo.png') center / contain no-repeat; }
+.product-hero-logo span { color: transparent; background: linear-gradient(105deg, #ff694f 0%, #f4b64d 26%, #6ccfa3 52%, #6b9cff 76%, #b37bff 100%); background-clip: text; -webkit-background-clip: text; font-size: 22px; font-weight: 800; letter-spacing: -.06em; white-space: nowrap; }
+@media (hover: none), (pointer: coarse) { .product-hero-logo { clip-path: none !important; } }
 .product-browser-top { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 28px 30px 10px; }
 .product-browser-top h2 { font-size: 24px; font-weight: 650; letter-spacing: -.05em; }
 .product-browser-top p { margin-top: 5px; color: rgba(23,23,23,.5); font-size: 13px; }
@@ -396,6 +402,8 @@ body {
 }
 
 @media (max-width: 700px) {
+  .product-hero-row { display: block; }
+  .product-hero-logo-zone { display: none; }
   .product-browser-shell { margin-inline: -4px; border-radius: 18px; }
   .product-browser-top { padding: 22px 18px 4px; }
   .product-browser-top p { display: none; }
