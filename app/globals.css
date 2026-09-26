@@ -333,7 +333,7 @@ main > section:has(.product-browser-top) { padding-bottom: 40px; }
 main > section:has(.product-browser-top) > div[aria-label="作品分类"] { margin-bottom: 12px; }
 .product-hero-row { display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(340px, 1fr); align-items: center; gap: 32px; }
 .product-hero-copy { min-width: 0; }
-.product-hero-copy h1 { font-size: clamp(42px, 3.8vw, 62px); }
+.product-hero-copy h1 { font-size: clamp(46px, 4.1vw, 68px); }
 .product-hero-logo-zone { position: relative; min-width: 0; height: 210px; display: flex; align-items: center; }
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
 .product-hero-logo span { position: relative; display: block; width: max-content; color: transparent; background: url('/first-look-snow-mountain.png') center 48% / cover no-repeat; background-clip: text; -webkit-background-clip: text; font-family: "Bahnschrift SemiCondensed", "Arial Narrow", Arial, sans-serif; font-size: clamp(74px, 10vw, 164px); font-weight: 750; letter-spacing: -.12em; line-height: .92; white-space: nowrap; transform: scaleX(.8); transform-origin: left center; }
@@ -434,7 +434,7 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
 @media (min-width: 701px) and (max-width: 1000px) {
   .product-hero-row { display: block; }
   .product-hero-logo-zone { width: min(100%, 640px); height: 180px; margin: 18px 0 0 auto; }
-  .product-hero-copy h1 { font-size: clamp(38px, 5vw, 50px); }
+  .product-hero-copy h1 { font-size: clamp(42px, 5.4vw, 56px); }
   .product-hero-logo span { font-size: clamp(54px, 8.5vw, 86px); transform: scaleX(.78); }
 }
 
