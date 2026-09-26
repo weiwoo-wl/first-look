@@ -25,12 +25,12 @@ export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "请求来源无效" }, { status: 403 });
   const db = runtime().DB;
   if (!db) return Response.json({ error: "数据库暂不可用" }, { status: 503 });
-  const body = await request.json() as { creationId?: number; action?: "favorite" | "share" | "view" }, id = Number(body.creationId);
+  const body = await request.json() as { creationId?: number; action?: "favorite" | "share" | "view"; source?: "copy-link" | "native-share" }, id = Number(body.creationId);
   if (!id || !body.action) return Response.json({ error: "操作信息不正确" }, { status: 400 });
   await ensureCreationTables(db);
   const product = await db.prepare("SELECT id,slug FROM creations WHERE id=? AND visibility='published'").bind(id).first<{ id: number; slug: string }>();
   if (!product) return Response.json({ error: "产品不存在" }, { status: 404 });
-  if (body.action === "share") { await db.prepare("INSERT INTO creation_shares(creation_id,source) VALUES(?,?)").bind(id, "copy-link").run(); return Response.json({ ok: true, url: `/work/${encodeURIComponent(product.slug)}` }); }
+  if (body.action === "share") { const source = body.source === "native-share" ? "native-share" : "copy-link"; await db.prepare("INSERT INTO creation_shares(creation_id,source) VALUES(?,?)").bind(id, source).run(); return Response.json({ ok: true, url: `/work/${encodeURIComponent(product.slug)}` }); }
   if (body.action === "view") {
     const user = await currentUser(request), cookie = request.headers.get("Cookie")?.match(/firstlook_viewer=([^;]+)/)?.[1], visitorKey = user ? `user:${user.id}` : `visitor:${cookie || crypto.randomUUID()}`, bucket = String(Math.floor(Date.now() / 1800000));
     await db.prepare("INSERT OR IGNORE INTO creation_views(creation_id,visitor_key,bucket) VALUES(?,?,?)").bind(id, visitorKey, bucket).run();
