@@ -310,6 +310,10 @@ body {
 }
 
 @media (max-width: 560px) {
+  main:has(> section.max-w-md) { padding: 1.25rem 1rem; }
+  main:has(> section.max-w-md) > section { min-height: calc(100dvh - 2.5rem); padding: 1.25rem; border-radius: 1rem; }
+  main:has(> section.max-w-md) .form-input, main:has(> section.max-w-md) .primary-button { min-height: 3rem; }
+  main:has(> section.max-w-md) h1 { margin-top: 1.75rem; }
   .store-nav-inner { height: 64px; }.store-wordmark span { display: none; }.store-search-trigger { width: 34px; height: 34px; }.store-login { display: none; }.store-publish { padding: 9px 13px; }.store-search { min-height: 62px; }.store-search input { font-size: 17px; }.store-hero { padding-top: 42px; }.hero-label { margin-bottom: 18px; }.hero-description { margin-top: 22px; font-size: 14px; }.hero-record-info { grid-template-columns: 1fr auto; }.hero-record-info span { grid-column: 1 / -1; }.hero-record-info small { font-size: 10px; }.record-bin { padding-top: 45px; }.bin-heading h2 { font-size: 40px; }.record-shelf { margin-right: -16px; grid-auto-columns: 82%; gap: 20px; padding-left: 2px; }.record-item:nth-child(3n + 2) { transform: none; }.bin-front { height: 72px; }.bin-front span { padding: 17px 20px; font-size: 8px; }.store-footer { margin-top: 72px; padding-bottom: 32px; }.store-footer a { font-size: 12px; }
   .detail-nav { height: 64px; }.detail-layout { width: 100%; padding-top: 0; }.detail-media { box-shadow: none; }.detail-media-area > :not(.detail-media) { margin-left: 16px; margin-right: 16px; }.detail-notes { padding: 0 16px; }.detail-notes h1 { font-size: 52px; }.detail-intro { font-size: 16px; }.detail-classification { margin-top: 0; }
 }
