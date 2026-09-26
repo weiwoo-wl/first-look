@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import { ArrowLeft, ExternalLink, Mail, Pencil, Share2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, ExternalLink, Mail, Pencil, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -17,6 +17,8 @@ export default function CreatorPublicPage() {
   const [sort, setSort] = useState<"new" | "popular">("new");
   const [type, setType] = useState("全部");
   const [shareMessage, setShareMessage] = useState("");
+  const [contactOpen, setContactOpen] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
 
   useEffect(() => {
     fetch(`/api/creator/public?handle=${encodeURIComponent(handle)}`)
@@ -68,6 +70,17 @@ export default function CreatorPublicPage() {
     window.setTimeout(() => setShareMessage(""), 3000);
   }
 
+  async function copyContactEmail() {
+    if (!profile.contactEmail) return;
+    try {
+      await navigator.clipboard.writeText(profile.contactEmail);
+      setEmailCopied(true);
+      window.setTimeout(() => setEmailCopied(false), 1800);
+    } catch {
+      setEmailCopied(false);
+    }
+  }
+
   if (!data) {
     return <main className="grid min-h-dvh place-items-center bg-[#f7f7f4] px-5 text-center text-sm text-black/50">{error || "正在打开创作者主页…"}</main>;
   }
@@ -109,7 +122,10 @@ export default function CreatorPublicPage() {
             <h1 className="mt-2 text-5xl font-semibold tracking-[-.07em] md:text-6xl">{profile.displayName}</h1>
             <p className="mt-5 max-w-2xl whitespace-pre-wrap text-sm leading-7 text-black/60">{profile.bio || "这位创作者还没有写介绍。"}</p>
           </div>
-          {profile.contactEmail && <a href={`mailto:${profile.contactEmail}`} className="inline-flex w-fit items-center gap-2 rounded-full bg-black px-5 py-3 text-sm text-white"><Mail size={15} />联系创作者</a>}
+          {profile.contactEmail && <div className="flex w-fit flex-col items-start gap-3">
+            <button type="button" onClick={() => setContactOpen((open) => !open)} aria-expanded={contactOpen} className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium"><Mail size={15} />联系创作者</button>
+            {contactOpen && <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white p-4"><a href={`mailto:${profile.contactEmail}`} className="select-all break-all text-sm font-medium">{profile.contactEmail}</a><button type="button" onClick={() => void copyContactEmail()} className="inline-flex items-center gap-2 rounded-full border border-black/15 px-4 py-2 text-xs font-medium">{emailCopied ? <Check size={14} /> : <Copy size={14} />}{emailCopied ? "已复制" : "复制邮箱"}</button></div>}
+          </div>}
         </div>
         <div className="mt-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
