@@ -28,20 +28,19 @@ export default function ProductActions({ creationId, slug, title, description, m
   async function favorite() { setError(""); const response = await fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "favorite" }) }); if (response.status === 401) { location.assign(`/login?next=${encodeURIComponent(`/work/${slug}`)}`); return; } const data = await response.json() as { favorited?: boolean; favorites?: number; error?: string }; if (!response.ok) { setError(data.error || "收藏失败"); return; } setState((current) => ({ ...current, favorited: Boolean(data.favorited), favorites: Number(data.favorites || 0) })); }
   async function share() {
     setError("");
-    const shareUrl = location.href, shareTitle = state.title || document.title;
+    const shareUrl = new URL(`/work/${encodeURIComponent(slug)}`, location.origin).toString();
     let source: "copy-link" | "native-share" = "copy-link";
     if (typeof navigator.share === "function") {
       try {
-        // WeChat's iOS share extension can be sensitive to URL payloads; pass a plain text link.
-        await navigator.share({ text: `${shareTitle}\n${shareUrl}` });
+        await navigator.share({ url: shareUrl });
         source = "native-share";
       } catch (shareError) {
         if (shareError instanceof DOMException && shareError.name === "AbortError") return;
-        try { await navigator.clipboard.writeText(`${shareTitle}\n${shareUrl}`); }
+        try { await navigator.clipboard.writeText(shareUrl); }
         catch { setError("分享未成功，复制链接也失败了，请长按网址复制"); return; }
       }
     } else {
-      try { await navigator.clipboard.writeText(`${shareTitle}\n${shareUrl}`); }
+      try { await navigator.clipboard.writeText(shareUrl); }
       catch { setError("此浏览器不支持直接分享，复制链接也失败了，请长按网址复制"); return; }
     }
     const response = await fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source }) }).catch(() => null);
