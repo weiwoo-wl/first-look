@@ -1,4 +1,5 @@
-import { ensureAuthTables, normalizeEmail, runtime, sameOrigin, sha256 } from "../../../../lib/auth";
+import { ensureAuthTables, ensureWelcomeEmailTable, normalizeEmail, runtime, sameOrigin, sha256 } from "../../../../lib/auth";
+import { sendWelcomeEmail } from "../../../../lib/smtp";
 
 type Intent = "register" | "recover";
 
@@ -32,5 +33,24 @@ export async function POST(request: Request) {
 
   const token = crypto.randomUUID() + crypto.randomUUID().replaceAll("-", "");
   await db.prepare("INSERT INTO user_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)").bind(await sha256(token), userId, new Date(Date.now() + 604800000).toISOString()).run();
+  if (!user) {
+    try {
+      await ensureWelcomeEmailTable(db);
+      const claim = await db.prepare("INSERT OR IGNORE INTO welcome_emails(user_id,status) VALUES(?,'sending')").bind(userId).run();
+      if (claim.meta.changes) {
+        const smtpPassword = runtime().SMTP_PASSWORD;
+        if (smtpPassword) {
+          await sendWelcomeEmail(email, smtpPassword);
+          await db.prepare("UPDATE welcome_emails SET status='sent',sent_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=?").bind(userId).run();
+        } else {
+          await db.prepare("UPDATE welcome_emails SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE user_id=?").bind(userId).run();
+          console.warn("[auth] welcome email skipped: SMTP_PASSWORD is not configured");
+        }
+      }
+    } catch (error) {
+      try { await db.prepare("UPDATE welcome_emails SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE user_id=?").bind(userId).run(); } catch {}
+      console.error("[auth] welcome email failed", error);
+    }
+  }
   return Response.json({ ok: true }, { headers: { "Set-Cookie": `first_look_session=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800` } });
 }

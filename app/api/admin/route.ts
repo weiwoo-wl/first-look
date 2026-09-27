@@ -1,7 +1,8 @@
 import { currentAdmin, ensureAdminTables, logAdminAction } from "../../lib/admin";
-import { runtime, sameOrigin } from "../../lib/auth";
+import { ensureWelcomeEmailTable, runtime, sameOrigin } from "../../lib/auth";
+import { sendWelcomeEmail } from "../../lib/smtp";
 
-type AdminAction = "hide_creation" | "restore_creation" | "disable_user" | "enable_user" | "grant_admin" | "revoke_admin" | "resolve_report" | "restore_report";
+type AdminAction = "hide_creation" | "restore_creation" | "disable_user" | "enable_user" | "grant_admin" | "revoke_admin" | "resolve_report" | "restore_report" | "backfill_welcome_emails";
 
 export async function GET(request: Request) {
   const db = runtime().DB;
@@ -9,8 +10,9 @@ export async function GET(request: Request) {
   const admin = await currentAdmin(request);
   if (!admin) return Response.json({ error: "无权访问管理后台" }, { status: 403 });
   await ensureAdminTables(db);
+  await ensureWelcomeEmailTable(db);
   const [counts, products, users, reports, actions] = await Promise.all([
-    db.prepare("SELECT (SELECT COUNT(*) FROM users) users_total,(SELECT COUNT(*) FROM creations) products_total,(SELECT COUNT(*) FROM creations WHERE visibility='published') published_total,(SELECT COUNT(*) FROM site_reports WHERE status='pending') reports_pending").first(),
+    db.prepare("SELECT (SELECT COUNT(*) FROM users) users_total,(SELECT COUNT(*) FROM creations) products_total,(SELECT COUNT(*) FROM creations WHERE visibility='published') published_total,(SELECT COUNT(*) FROM site_reports WHERE status='pending') reports_pending,(SELECT COUNT(*) FROM users u WHERE NOT EXISTS(SELECT 1 FROM welcome_emails w WHERE w.user_id=u.id)) welcome_pending,(SELECT COUNT(*) FROM welcome_emails WHERE status='failed') welcome_failed").first(),
     db.prepare("SELECT c.id,c.title,c.type,c.creator_name,c.visibility,c.created_at,c.updated_at,CASE WHEN h.creation_id IS NULL THEN 0 ELSE 1 END AS admin_hidden FROM creations c LEFT JOIN admin_hidden_creations h ON h.creation_id=c.id ORDER BY COALESCE(c.updated_at,c.created_at) DESC LIMIT 200").all(),
     db.prepare("SELECT u.id,u.email,u.display_name,u.created_at,u.disabled_at,a.role AS admin_role FROM users u LEFT JOIN site_admins a ON a.user_id=u.id ORDER BY u.created_at DESC LIMIT 200").all(),
     db.prepare("SELECT r.id,r.target_type,r.target_id,r.reason,r.status,r.created_at,u.display_name AS reporter_name FROM site_reports r LEFT JOIN users u ON u.id=r.reporter_id ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC LIMIT 100").all(),
@@ -27,8 +29,36 @@ export async function POST(request: Request) {
   if (!admin) return Response.json({ error: "无权执行管理操作" }, { status: 403 });
   const body = await request.json() as { action?: AdminAction; targetId?: string | number };
   const action = body.action, targetId = String(body.targetId || "").trim();
-  if (!action || !targetId) return Response.json({ error: "操作信息不完整" }, { status: 400 });
+  if (!action || (action !== "backfill_welcome_emails" && !targetId)) return Response.json({ error: "操作信息不完整" }, { status: 400 });
   await ensureAdminTables(db);
+  await ensureWelcomeEmailTable(db);
+
+  if (action === "backfill_welcome_emails") {
+    if (admin.role !== "owner") return Response.json({ error: "只有所有者可以补发欢迎邮件" }, { status: 403 });
+    const smtpPassword = runtime().SMTP_PASSWORD;
+    if (!smtpPassword) return Response.json({ error: "邮件服务尚未配置完成" }, { status: 503 });
+    const batchId = crypto.randomUUID();
+    await db.prepare("INSERT OR IGNORE INTO welcome_emails(user_id,status,batch_id) SELECT u.id,'sending',? FROM users u WHERE NOT EXISTS(SELECT 1 FROM welcome_emails w WHERE w.user_id=u.id) ORDER BY u.created_at ASC LIMIT 5").bind(batchId).run();
+    const batch = await db.prepare("SELECT u.id,u.email FROM welcome_emails w JOIN users u ON u.id=w.user_id WHERE w.batch_id=? AND w.status='sending'").bind(batchId).all<{ id:string; email:string }>();
+    let sent = 0, failed = 0;
+    for (const recipient of batch.results) {
+      try {
+        await sendWelcomeEmail(recipient.email, smtpPassword);
+        await db.prepare("UPDATE welcome_emails SET status='sent',batch_id=NULL,sent_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND batch_id=?").bind(recipient.id,batchId).run();
+        sent++;
+      } catch (error) {
+        await db.prepare("UPDATE welcome_emails SET status='failed',batch_id=NULL,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND batch_id=?").bind(recipient.id,batchId).run();
+        console.error("[admin] welcome backfill failed", error);
+        failed++;
+      }
+    }
+    const [pending, failures] = await Promise.all([
+      db.prepare("SELECT COUNT(*) AS total FROM users u WHERE NOT EXISTS(SELECT 1 FROM welcome_emails w WHERE w.user_id=u.id)").first<{ total:number }>(),
+      db.prepare("SELECT COUNT(*) AS total FROM welcome_emails WHERE status='failed'").first<{ total:number }>(),
+    ]);
+    await logAdminAction(db, admin.id, action, "user", "all", `成功 ${sent}，失败 ${failed}`);
+    return Response.json({ ok:true, sent, failed, remaining:Number(pending?.total||0), totalFailed:Number(failures?.total||0) });
+  }
 
   if (action === "hide_creation") {
     const product = await db.prepare("SELECT id,title,visibility FROM creations WHERE id=?").bind(Number(targetId)).first<{ id:number; title:string; visibility:string }>();
