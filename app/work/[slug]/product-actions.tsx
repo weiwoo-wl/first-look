@@ -50,18 +50,18 @@ export default function ProductActions({ creationId, slug, title, description, m
   }
   async function copyContactEmail() { if (!state.contactEmail) return; try { await navigator.clipboard.writeText(state.contactEmail); setEmailCopied(true); setTimeout(() => setEmailCopied(false), 1800); } catch { setError("复制失败，请手动选择邮箱地址复制"); } }
 
-  return <div className="mt-8">
+  return <div className="product-actions mt-8">
     <div className="flex flex-wrap items-center gap-3">
-      <button onClick={like} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.liked ? "bg-[#e15d36] text-white" : "bg-black text-white"}`}><Heart size={16} fill={state.liked ? "currentColor" : "none"} />{state.liked ? "已喜欢" : "喜欢"}<span className="text-xs opacity-65">{state.likes}</span></button>
-      <button onClick={favorite} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.favorited ? "bg-[#e15d36] text-white" : "border border-black/15 bg-white text-black"}`}><Star size={16} fill={state.favorited ? "currentColor" : "none"} />{state.favorited ? "已收藏" : "收藏"}<span className="text-xs opacity-65">{state.favorites}</span></button>
+      <button onClick={like} className={`product-action-trigger inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.liked ? "bg-[#e15d36] text-white" : "bg-black text-white"}`}><Heart size={16} fill={state.liked ? "currentColor" : "none"} />{state.liked ? "已喜欢" : "喜欢"}<span className="text-xs opacity-65">{state.likes}</span></button>
+      <button onClick={favorite} className={`product-action-trigger inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.favorited ? "bg-[#e15d36] text-white" : "border border-black/15 bg-white text-black"}`}><Star size={16} fill={state.favorited ? "currentColor" : "none"} />{state.favorited ? "已收藏" : "收藏"}<span className="text-xs opacity-65">{state.favorites}</span></button>
       <div ref={shareMenuRef} className="relative">
-        <button type="button" aria-haspopup="menu" aria-expanded={shareMenuOpen} onClick={() => setShareMenuOpen((open) => !open)} className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium"><Share2 size={16} />分享<ChevronDown size={14} className={`transition-transform ${shareMenuOpen ? "rotate-180" : ""}`} /></button>
+        <button type="button" aria-haspopup="menu" aria-expanded={shareMenuOpen} onClick={() => setShareMenuOpen((open) => !open)} className="product-action-trigger inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium"><Share2 size={16} />分享<ChevronDown size={14} className={`transition-transform ${shareMenuOpen ? "rotate-180" : ""}`} /></button>
         {shareMenuOpen && <div role="menu" aria-label="分享方式" className="absolute left-0 top-full z-40 mt-2 min-w-44 overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-xl">
           <button type="button" role="menuitem" onClick={() => { setShareMenuOpen(false); void share(); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-black/5"><Link2 size={16} />分享链接</button>
           <button type="button" role="menuitem" onClick={() => { setShareMenuOpen(false); setPosterOpen(true); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-black/5"><ImageIcon size={16} />分享海报</button>
         </div>}
       </div>
-      {state.contactEmail && <button type="button" onClick={() => setContactOpen((open) => !open)} aria-expanded={contactOpen} className="inline-flex items-center rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">联系创作者</button>}
+      {state.contactEmail && <button type="button" onClick={() => setContactOpen((open) => !open)} aria-expanded={contactOpen} className="product-action-trigger inline-flex items-center rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">联系创作者</button>}
       <ReportButton creationId={creationId} />
     </div>
     {contactOpen && state.contactEmail && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white p-4"><span className="select-all break-all text-sm font-medium">{state.contactEmail}</span><button type="button" onClick={() => void copyContactEmail()} className="inline-flex items-center gap-2 rounded-full border border-black/15 px-4 py-2 text-xs font-medium">{emailCopied ? <Check size={14} /> : <Copy size={14} />}{emailCopied ? "已复制" : "复制邮箱"}</button></div>}
