@@ -20,5 +20,5 @@ export async function sendVerificationEmail(to:string,code:string,password:strin
 }
 
 export async function sendWelcomeEmail(to:string,password:string){
-  await sendTextEmail(to,"欢迎来 First Look","嗨，欢迎加入 First Look！\n\n很高兴你来了。做东西的时候，不用等到一切都完美了才开始，也不用太担心想法会不会被模仿——先按自己的节奏做下去就好。\n\n希望你在这里待得自在，也期待慢慢看到你做的东西。\n\nFirst Look",password);
+  await sendTextEmail(to,"欢迎来 First Look","嗨，欢迎加入 First Look！\n\n很高兴你来了。做东西的时候，不用等到一切都完美了才开始，也不用太担心想法会不会被模仿，因为总说完成比完美重要，经典也注定会被模仿——先按自己的节奏做下去就好。\n\n希望你在这里待得自在，也期待慢慢看到你做的东西。\n\nFirst Look",password);
 }
