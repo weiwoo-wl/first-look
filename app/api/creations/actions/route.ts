@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   await ensureCreationTables(db);
   const product = await db.prepare("SELECT id,slug FROM creations WHERE id=? AND visibility='published'").bind(id).first<{ id: number; slug: string }>();
   if (!product) return Response.json({ error: "产品不存在" }, { status: 404 });
-  if (body.action === "share") { const source = body.source === "native-share" ? "native-share" : "copy-link"; await db.prepare("INSERT INTO creation_shares(creation_id,source) VALUES(?,?)").bind(id, source).run(); return Response.json({ ok: true, url: `/work/${encodeURIComponent(product.slug)}` }); }
+  if (body.action === "share") { const source = body.source === "native-share" ? "native-share" : "copy-link", user = await currentUser(request); await db.prepare("INSERT INTO creation_shares(creation_id,user_id,source) VALUES(?,?,?)").bind(id, user?.id || null, source).run(); return Response.json({ ok: true, url: `/work/${encodeURIComponent(product.slug)}` }); }
   if (body.action === "view") {
     const user = await currentUser(request), cookie = request.headers.get("Cookie")?.match(/firstlook_viewer=([^;]+)/)?.[1], visitorKey = user ? `user:${user.id}` : `visitor:${cookie || crypto.randomUUID()}`, bucket = String(Math.floor(Date.now() / 1800000));
     await db.prepare("INSERT OR IGNORE INTO creation_views(creation_id,visitor_key,bucket) VALUES(?,?,?)").bind(id, visitorKey, bucket).run();

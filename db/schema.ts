@@ -31,6 +31,7 @@ export const creationLikes = sqliteTable("creation_likes", {
 export const creationShares = sqliteTable("creation_shares", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   creationId: integer("creation_id").notNull().references(() => creations.id),
+  userId: text("user_id"),
   source: text("source").notNull().default("copy-link"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
