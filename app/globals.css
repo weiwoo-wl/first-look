@@ -385,12 +385,13 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
 .announcement-admin-list .admin-row-actions button:last-child { border-color: #171717; background: #171717; color: #fff; }
 .announcement-admin-list .admin-row-actions button:last-child:hover { background: #3a3a35; }
 .announcement-admin-list .admin-row-actions button:disabled { cursor: wait; }
+.announcement-row-feedback { flex-basis: 100%; margin-left: auto; color: #666; font-size: 12px; text-align: right; }
 .announcement-feedback { margin: 0 24px 18px; font-size: 13px; color: #316a40; }
 .announcement-feedback.is-error { color: #a23227; }
 .announcement-admin-list h3 { margin-top: 10px; font-size: 16px; font-weight: 600; }
 .announcement-admin-list p { margin-top: 6px; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; color: #666; }
 .announcement-admin-list a { display: block; margin-top: 8px; font-size: 12px; overflow-wrap: anywhere; color: #666; text-decoration: underline; }
-@media (max-width: 600px) { .announcement-ticker { gap: 9px; font-size: 12px; padding-inline: 8px; } .announcement-admin-list article { align-items: flex-start; flex-direction: column; } .announcement-form { padding: 18px; } }
+@media (max-width: 600px) { .announcement-ticker { gap: 9px; font-size: 12px; padding-inline: 8px; } .announcement-admin-list article { align-items: flex-start; flex-direction: column; } .announcement-row-feedback { margin-left: 0; text-align: left; } .announcement-form { padding: 18px; } }
 .product-hero-copy h1 { font-size: clamp(46px, 4.1vw, 68px); }
 .product-hero-logo-zone { position: relative; min-width: 0; height: 210px; display: flex; align-items: center; }
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
