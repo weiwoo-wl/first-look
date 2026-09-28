@@ -45,7 +45,8 @@ function ProductCover({ product, active, color }: { product: Product; active: bo
     if (active && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) video.play().catch(() => undefined);
     else { video.pause(); video.currentTime = 0; }
   }, [active]);
-  return <div className="product-cover" style={{ background: color }}>
+return <div className="product-cover" style={{ background: color }}>
+    <span className="product-cover-brand">FIRST LOOK</span>
     {media?.media_type === "video" ? <video ref={videoRef} src={mediaSource(media)} muted playsInline preload="auto" onLoadedData={(event) => { if (event.currentTarget.currentTime === 0 && event.currentTarget.duration > .1) event.currentTarget.currentTime = .1; }} /> : product.coverUrl ? <img src={product.coverUrl} alt={`${product.title} 官方展示图`} loading="lazy" /> : media ? <img src={mediaSource(media)} alt={`${product.title} 产品封面`} /> : <div className="product-cover-placeholder"><small>{product.type}</small><strong>{product.title}</strong><span>FIRST LOOK</span></div>}
     {product.externalUrl && <span className="product-external-badge">外部独立作品</span>}
     {media?.media_type === "video" && <span className="product-video-mark"><Play size={14} fill="currentColor" /></span>}
