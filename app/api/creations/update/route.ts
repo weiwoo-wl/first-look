@@ -89,6 +89,11 @@ export async function PATCH(request: Request) {
   const nextTech = { notes: technical.notes, links: technical.links, files: techFiles };
   const currentData = { title: String(product.title), description: String(product.description), type: String(product.type), status: String(product.status), story: String(product.story || ""), tags: String(product.tags || ""), product_url: String(product.product_url || "") };
   const nextData = { title, description, type, status, story, tags, product_url: productUrl };
+  const versionNote = changeNote || (currentData.product_url !== nextData.product_url
+    ? currentData.product_url
+      ? nextData.product_url ? "更新了产品入口" : "移除了产品入口"
+      : "添加了产品入口"
+    : "补充或更新产品内容");
   const sameMedia = currentMedia.results.length === mediaRows.length && currentMedia.results.every((item, index) => item.object_key === mediaRows[index].object_key);
   const sameTechFiles = currentTechnical.files.length === techFiles.length && currentTechnical.files.every((item, index) => item.object_key === techFiles[index].object_key);
   const sameTech = currentTechnical.notes === technical.notes && JSON.stringify(currentTechnical.links) === JSON.stringify(technical.links) && sameTechFiles;
@@ -140,9 +145,9 @@ export async function PATCH(request: Request) {
       ...[...newMediaRows.results.map((item) => item.object_key), ...stagedTech.results.map((item) => item.object_key)].map((key) => db.prepare("UPDATE storage_objects SET state='stored',expires_at=0 WHERE object_key=? AND owner_id=? AND creation_id=? AND state='reserved'").bind(key, user.id, id)),
       ...newMediaRows.results.map((item) => db.prepare("DELETE FROM storage_parts WHERE object_key=?").bind(item.object_key)),
       ...stagedTech.results.map((item) => db.prepare("DELETE FROM creation_edit_uploads WHERE object_key=? AND owner_id=?").bind(item.object_key, user.id)),
-      db.prepare("INSERT INTO creation_versions(creation_id,creator_id,version_number,title,description,type,status,story,tags,product_url,change_note,media_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(id, user.id, version, title, description, type, status, story, tags, productUrl, changeNote || "补充或更新产品内容", JSON.stringify(mediaSnapshot)),
+      db.prepare("INSERT INTO creation_versions(creation_id,creator_id,version_number,title,description,type,status,story,tags,product_url,change_note,media_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(id, user.id, version, title, description, type, status, story, tags, productUrl, versionNote, JSON.stringify(mediaSnapshot)),
       db.prepare("INSERT INTO creation_version_technical(version_id,data_json) SELECT id,? FROM creation_versions WHERE creation_id=? AND version_number=?").bind(JSON.stringify(nextTech), id, version),
-      db.prepare("INSERT INTO creation_events(creation_id,actor_id,event_type,version_number,likes_total,detail) VALUES(?,?,'updated',?,?,?)").bind(id, user.id, version, Number(likes?.total || 0), changeNote || "补充或更新产品内容"),
+      db.prepare("INSERT INTO creation_events(creation_id,actor_id,event_type,version_number,likes_total,detail) VALUES(?,?,'updated',?,?,?)").bind(id, user.id, version, Number(likes?.total || 0), versionNote),
     ];
     const result = await db.batch(statements);
     if (!result[hasHistory ? 0 : 3]?.meta.changes) throw Error("产品内容刚刚有更新，请刷新后重试");
