@@ -351,6 +351,38 @@ main > section:has(.product-browser-top) { padding-bottom: 40px; }
 main > section:has(.product-browser-top) > div[aria-label="作品分类"] { margin-bottom: 12px; }
 .product-hero-row { display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(340px, 1fr); align-items: center; gap: 32px; }
 .product-hero-copy { min-width: 0; }
+.announcement-ticker { display: flex; align-items: center; gap: 14px; min-width: 0; height: 42px; margin: 0 0 18px; padding: 0 12px; border-block: 1px solid rgba(23,23,23,.1); background: rgba(23,23,23,.025); font-size: 13px; }
+.announcement-label { display: flex; align-items: center; gap: 7px; flex-shrink: 0; font-weight: 650; }
+.announcement-label i { width: 5px; height: 5px; border-radius: 50%; background: #658a71; }
+.announcement-window { flex: 1; min-width: 0; overflow: hidden; container-type: inline-size; }
+.announcement-track { display: flex; width: max-content; animation: announcement-scroll linear infinite; }
+.announcement-group { display: flex; flex-shrink: 0; min-width: 100cqw; align-items: center; }
+.announcement-item, .announcement-item > span, .announcement-item > a { display: inline-flex; align-items: center; flex-shrink: 0; white-space: nowrap; gap: 12px; }
+.announcement-item { color: #555650; }
+.announcement-item strong { color: #272822; font-weight: 600; }
+.announcement-item > a:hover { color: #171717; text-decoration: underline; text-underline-offset: 3px; }
+.announcement-separator { padding: 0 26px; color: #9c9d94; }
+.announcement-ticker > button { display: grid; flex-shrink: 0; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #555650; }
+.announcement-ticker > button:hover { background: rgba(23,23,23,.07); }
+.announcement-ticker:hover .announcement-track, .announcement-ticker:focus-within .announcement-track, .announcement-ticker.is-paused .announcement-track { animation-play-state: paused; }
+.announcement-ticker :focus-visible { outline: 2px solid #658a71; outline-offset: 2px; }
+@keyframes announcement-scroll { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .announcement-track { animation: none; } .announcement-group[aria-hidden="true"], .announcement-item[aria-hidden="true"] { display: none; } .announcement-window { overflow-x: auto; } }
+.announcement-manager { max-width: 1000px; }
+.announcement-form { display: grid; gap: 16px; padding: 24px; font-size: 14px; }
+.announcement-form > label { display: grid; gap: 8px; }
+.announcement-form > label input, .announcement-form textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; background: white; }
+.announcement-form textarea { resize: vertical; }
+.announcement-form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+.announcement-form-actions label { display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.announcement-form-actions button { padding: 9px 16px; border-radius: 8px; background: #171717; color: white; }
+.announcement-form button:disabled, .announcement-admin-list button:disabled { opacity: .5; }
+.announcement-admin-list article { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; border-top: 1px solid #e8e8e4; }
+.announcement-admin-list article > div:first-child { min-width: 0; }
+.announcement-admin-list h3 { margin-top: 10px; font-size: 16px; font-weight: 600; }
+.announcement-admin-list p { margin-top: 6px; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; color: #666; }
+.announcement-admin-list a { display: block; margin-top: 8px; font-size: 12px; overflow-wrap: anywhere; color: #666; text-decoration: underline; }
+@media (max-width: 600px) { .announcement-ticker { gap: 9px; font-size: 12px; padding-inline: 8px; } .announcement-admin-list article { align-items: flex-start; flex-direction: column; } .announcement-form { padding: 18px; } }
 .product-hero-copy h1 { font-size: clamp(46px, 4.1vw, 68px); }
 .product-hero-logo-zone { position: relative; min-width: 0; height: 210px; display: flex; align-items: center; }
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
