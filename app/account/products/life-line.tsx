@@ -48,7 +48,17 @@ function VersionDetails({ version, likesAtRelease, currentLikes }: { version: Pr
 export default function LifeLine({ versions, events, currentLikes }: { versions: ProductVersion[]; events: ProductEvent[]; currentLikes: number }) {
   const [selected, setSelected] = useState<number | null>(null);
   const likesAtRelease = new Map(events.filter((event) => ["published", "updated"].includes(event.event_type) && event.version_number !== null).map((event) => [event.version_number, event.likes_total]));
-  const entries = [...versions.map((version) => ({ key: `v${version.id}`, date: version.created_at, kind: "version" as const, version })), ...events.filter((event) => eventLabels[event.event_type]).map((event) => ({ key: `e${event.id}`, date: event.created_at, kind: "event" as const, event }))].sort((a, b) => b.date.localeCompare(a.date));
+  const chronologicalVersions = [...versions].sort((a, b) => a.version_number - b.version_number);
+  const versionsWithEntryNotes = chronologicalVersions.map((version, index) => {
+    const previous = chronologicalVersions[index - 1];
+    if (!previous || (version.change_note && version.change_note !== "补充或更新产品内容")) return version;
+    if (previous.product_url === version.product_url) return version;
+    const changeNote = previous.product_url
+      ? version.product_url ? "更新了产品入口" : "移除了产品入口"
+      : "添加了产品入口";
+    return { ...version, change_note: changeNote };
+  });
+  const entries = [...versionsWithEntryNotes.map((version) => ({ key: `v${version.id}`, date: version.created_at, kind: "version" as const, version })), ...events.filter((event) => eventLabels[event.event_type]).map((event) => ({ key: `e${event.id}`, date: event.created_at, kind: "event" as const, event }))].sort((a, b) => b.date.localeCompare(a.date));
   if (!entries.length) return <p className="py-6 text-sm text-black/45">完成首次发布后，这里会出现产品的生命线。</p>;
   return <div className="mt-7">
     <div className="grid grid-cols-[5.5rem_1.5rem_1fr] items-center sm:grid-cols-[9rem_2rem_1fr]"><span /><span className="mx-auto h-3 w-3 rounded-full border-2 border-[#f7f7f4] bg-[#bd4b32] ring-1 ring-[#bd4b32]" /><p className="text-xs font-semibold tracking-wide text-[#9a3f2c]">发布记录</p></div>
