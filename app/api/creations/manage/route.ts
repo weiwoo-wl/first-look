@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   await ensureCreationTables(db);
   const body = await request.json() as { creationId?: number; action?: "unpublish" | "republish" | "publicize" | "delete" | "toggle_contact"; contactEmailVisible?: boolean };
   if (!body.creationId || !["unpublish", "republish", "publicize", "delete", "toggle_contact"].includes(body.action || "")) return Response.json({ error: "操作信息不正确" }, { status: 400 });
-  const product = await db.prepare("SELECT id,visibility,contact_email_visible FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id).first<{ id:number; visibility:string; contact_email_visible:number }>();
+  const product = await db.prepare("SELECT id,visibility,contact_email_visible,edit_lock_until FROM creations WHERE id=? AND creator_id=?").bind(body.creationId, user.id).first<{ id:number; visibility:string; contact_email_visible:number; edit_lock_until:number }>();
   if (!product) return Response.json({ error: "找不到这个产品" }, { status: 404 });
 
   if (body.action === "toggle_contact") {
@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, contactEmailVisible: Boolean(visible) });
   }
 
+  if (Number(product.edit_lock_until||0)>Date.now()) return Response.json({error:"产品正在保存修改，请稍后重试"},{status:409});
   if (["finalizing","deleting"].includes(product.visibility)) return Response.json({error:"作品正在保存或删除，请稍后重试"},{status:409});
   if (body.action === "delete") {
     if(!bucket)return Response.json({error:"文件存储暂不可用，请稍后再删除"},{status:503});

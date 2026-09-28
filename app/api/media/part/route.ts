@@ -8,7 +8,7 @@ export async function PUT(request:Request) {
   if(!db||!bucket)return new Response(null,{status:503});
   const key=q.get("key"),uploadId=q.get("uploadId"),id=Number(q.get("creationId")),part=Number(q.get("part"));
   if(!key||!uploadId||!Number.isSafeInteger(part)||part<1)return new Response(null,{status:400});
-  const row=await db.prepare("SELECT s.* FROM storage_objects s JOIN creations c ON c.id=s.creation_id WHERE s.object_key=? AND s.creation_id=? AND s.owner_id=? AND s.upload_id=? AND s.state='reserved' AND s.expires_at>? AND c.visibility IN ('draft','private_pending')").bind(key,id,user.id,uploadId,Date.now()).first<UploadReservation>();
+  const row=await db.prepare("SELECT s.* FROM storage_objects s JOIN creations c ON c.id=s.creation_id WHERE s.object_key=? AND s.creation_id=? AND s.owner_id=? AND s.upload_id=? AND s.state='reserved' AND s.expires_at>? AND ((c.visibility IN ('draft','private_pending')) OR (c.visibility IN ('published','private','unpublished') AND COALESCE(c.edit_lock_until,0)< ?))").bind(key,id,user.id,uploadId,Date.now(),Date.now()).first<UploadReservation>();
   if(!row||part>Math.ceil(row.size/UPLOAD_LIMITS.part))return Response.json({error:"上传已失效或分片超出范围"},{status:409});
   const expected=Math.min(UPLOAD_LIMITS.part,row.size-(part-1)*UPLOAD_LIMITS.part);
   if(request.headers.has("Content-Length")&&Number(request.headers.get("Content-Length"))!==expected)return Response.json({error:"文件实际大小与声明不一致"},{status:413});

@@ -20,6 +20,8 @@ export async function ensureCreationTables(db: CreationDb) {
   ]);
   try { await db.prepare("ALTER TABLE creation_shares ADD COLUMN user_id TEXT").run(); } catch {}
   try { await db.prepare("ALTER TABLE creations ADD COLUMN contact_email_visible INTEGER NOT NULL DEFAULT 0").run(); } catch {}
+  try { await db.prepare("ALTER TABLE creations ADD COLUMN edit_lock_until INTEGER NOT NULL DEFAULT 0").run(); } catch {}
+  await db.prepare("CREATE TABLE IF NOT EXISTS creation_edit_uploads(object_key TEXT PRIMARY KEY,creation_id INTEGER NOT NULL,owner_id TEXT NOT NULL,kind TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL,mime TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)").run();
   for (const statement of ["ALTER TABLE creations ADD COLUMN tags TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN product_url TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN updated_at TEXT"]) { try { await db.prepare(statement).run(); } catch {} }
   try { await db.prepare("UPDATE creations SET updated_at=created_at WHERE updated_at IS NULL").run(); } catch {}
 }

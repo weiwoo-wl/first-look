@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const creationId = Number(segments[3]);
     const creation = await db.prepare("SELECT creator_id,visibility FROM creations WHERE id=?").bind(creationId).first<{ creator_id:string; visibility:string }>();
     if (!creation || String(creation.creator_id) !== segments[1]) return notFound();
-    const media = await db.prepare("SELECT 1 AS found FROM creation_media WHERE creation_id=? AND object_key=? LIMIT 1").bind(creationId,key).first();
+    const media = await db.prepare("SELECT 1 AS found FROM creation_media WHERE creation_id=? AND object_key=? UNION ALL SELECT 1 FROM creation_versions v,json_each(v.media_json) j WHERE v.creation_id=? AND json_extract(j.value,'$.object_key')=? LIMIT 1").bind(creationId,key,creationId,key).first();
     if (!media) return notFound();
     if (creation.visibility !== "published") {
       const user = await currentUser(request);

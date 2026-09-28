@@ -1,16 +1,23 @@
 import {currentUser,runtime,sameOrigin} from "../../../lib/auth";
 import {ensureStorage,cleanupExpired,reserve,release,QuotaError,type UploadReservation} from "../../../lib/storage-quota";
+import {ensureCreationTables} from "../../../lib/creations";
 const allowed=new Set(["image/jpeg","image/png","image/webp","image/gif","video/mp4","video/webm","video/quicktime"]);
 export async function POST(request:Request) {
   if(!sameOrigin(request))return Response.json({error:"请求来源无效"},{status:403});
   const user=await currentUser(request),{DB:db,MEDIA:bucket}=runtime();
   if(!user)return Response.json({error:"请先登录"},{status:401});
   if(!db||!bucket)return Response.json({error:"媒体存储尚未配置"},{status:503});
-  const body=await request.json() as {creationId:number;type:string;size:number};
+  await ensureCreationTables(db);
+  const body=await request.json() as {creationId:number;type:string;size:number;editing?:boolean};
   if(!Number.isSafeInteger(body.creationId)||!allowed.has(body.type)||!Number.isSafeInteger(body.size))return Response.json({error:"文件类型或大小不符合要求"},{status:400});
+  const product=await db.prepare("SELECT visibility,edit_lock_until FROM creations WHERE id=? AND creator_id=?").bind(body.creationId,user.id).first<{visibility:string;edit_lock_until:number}>();
+  if(!product)return Response.json({error:"找不到这个产品"},{status:404});
+  const editing=["published","private","unpublished"].includes(product.visibility)||(body.editing===true&&["draft","private_pending"].includes(product.visibility));
+  if(editing&&Number(product.edit_lock_until||0)>Date.now())return Response.json({error:"产品正在保存修改，请稍后重试"},{status:409});
+  if(!editing&&!['draft','private_pending'].includes(product.visibility))return Response.json({error:"产品当前无法上传媒体"},{status:409});
   try{await ensureStorage(db,bucket);await cleanupExpired(db,bucket);}catch{return Response.json({error:"正在核对存储空间，请稍后重试"},{status:503});}
   const key=`users/${user.id}/creations/${body.creationId}/${crypto.randomUUID()}`;
-  try {await reserve(db,{key,owner:user.id,creationId:body.creationId,size:body.size,kind:"media",mime:body.type});}
+  try {await reserve(db,{key,owner:user.id,creationId:body.creationId,size:body.size,kind:"media",mime:body.type,editing});}
   catch(error){if(error instanceof QuotaError)return Response.json({error:error.message},{status:413});throw error;}
   try {
     const upload=await bucket.createMultipartUpload(key,{httpMetadata:{contentType:body.type}});

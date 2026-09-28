@@ -50,10 +50,10 @@ export async function quota(db: D1Database, owner: string): Promise<StorageQuota
   const row = await db.prepare("SELECT COALESCE(SUM(CASE WHEN owner_id=? THEN size ELSE 0 END),0) AS used,COALESCE(SUM(size),0) AS total FROM storage_objects").bind(owner).first<{used:number;total:number}>();
   return {used:row?.used || 0,limit:UPLOAD_LIMITS.account,remaining:Math.max(0,UPLOAD_LIMITS.account-(row?.used||0)),siteRemaining:Math.max(0,UPLOAD_LIMITS.site-(row?.total||0)),productLimit:UPLOAD_LIMITS.product};
 }
-export async function reserve(db: D1Database, data: {key:string;owner:string;creationId:number;size:number;kind:"media"|"technical";mime:string}) {
-  const {key,owner,creationId,size,kind,mime}=data;
+export async function reserve(db: D1Database, data: {key:string;owner:string;creationId:number;size:number;kind:"media"|"technical";mime:string;editing?:boolean}) {
+  const {key,owner,creationId,size,kind,mime,editing=false}=data;
   if (!Number.isSafeInteger(size)||size<=0||size>(kind==="technical"?UPLOAD_LIMITS.technical:mime.startsWith("image/")?UPLOAD_LIMITS.image:UPLOAD_LIMITS.video)) throw new QuotaError("文件超出大小限制");
-  const result=await db.prepare("INSERT INTO storage_objects(object_key,owner_id,creation_id,size,kind,mime,expires_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM creations WHERE id=? AND creator_id=? AND visibility IN ('draft','private_pending')) AND COALESCE((SELECT SUM(size) FROM storage_objects),0)+?<=? AND COALESCE((SELECT SUM(size) FROM storage_objects WHERE owner_id=?),0)+?<=? AND COALESCE((SELECT SUM(size) FROM storage_objects WHERE creation_id=?),0)+?<=? AND (SELECT COUNT(*) FROM storage_objects WHERE creation_id=? AND kind=?)<?").bind(key,owner,creationId,size,kind,mime,Date.now()+24*60*60*1000,creationId,owner,size,UPLOAD_LIMITS.site,owner,size,UPLOAD_LIMITS.account,creationId,size,UPLOAD_LIMITS.product,creationId,kind,kind==="media"?8:5).run();
+  const result=await db.prepare("INSERT INTO storage_objects(object_key,owner_id,creation_id,size,kind,mime,expires_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM creations WHERE id=? AND creator_id=? AND ((?=0 AND visibility IN ('draft','private_pending')) OR (?=1 AND visibility IN ('published','private','unpublished','draft','private_pending')) AND COALESCE(edit_lock_until,0)< ?)) AND COALESCE((SELECT SUM(size) FROM storage_objects),0)+?<=? AND COALESCE((SELECT SUM(size) FROM storage_objects WHERE owner_id=?),0)+?<=? AND (?=1 OR (COALESCE((SELECT SUM(size) FROM storage_objects WHERE creation_id=?),0)+?<=? AND (SELECT COUNT(*) FROM storage_objects WHERE creation_id=? AND kind=?)<?))").bind(key,owner,creationId,size,kind,mime,Date.now()+24*60*60*1000,creationId,owner,editing?1:0,editing?1:0,Date.now(),size,UPLOAD_LIMITS.site,owner,size,UPLOAD_LIMITS.account,editing?1:0,creationId,size,UPLOAD_LIMITS.product,creationId,kind,kind==="media"?8:5).run();
   if (!result.meta.changes) {
     const usage=await quota(db,owner);
     if (usage.siteRemaining<size) throw new QuotaError("全站上传空间已达上限，暂时无法新增文件");
@@ -64,7 +64,7 @@ export async function reserve(db: D1Database, data: {key:string;owner:string;cre
 export async function release(db:D1Database,bucket:R2Bucket,row:UploadReservation) {
   if (row.upload_id && row.state!=="stored" && !await bucket.head(row.object_key)) await bucket.resumeMultipartUpload(row.object_key,row.upload_id).abort();
   await bucket.delete(row.object_key);
-  await db.batch([db.prepare("DELETE FROM storage_parts WHERE object_key=?").bind(row.object_key),db.prepare("DELETE FROM storage_objects WHERE object_key=?").bind(row.object_key)]);
+  await db.batch([db.prepare("DELETE FROM storage_parts WHERE object_key=?").bind(row.object_key),db.prepare("DELETE FROM creation_edit_uploads WHERE object_key=?").bind(row.object_key),db.prepare("DELETE FROM storage_objects WHERE object_key=?").bind(row.object_key)]);
 }
 export async function cleanupExpired(db:D1Database,bucket:R2Bucket) {
   const rows=await db.prepare("SELECT * FROM storage_objects WHERE state='reserved' AND expires_at<? AND NOT EXISTS(SELECT 1 FROM creations c WHERE c.id=storage_objects.creation_id AND c.visibility='finalizing') LIMIT 10").bind(Date.now()).all<UploadReservation>();

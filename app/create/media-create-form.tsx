@@ -28,8 +28,8 @@ export default function MediaCreateForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [story, setStory] = useState("");
-  const tags = "";
-  const productUrl = "";
+  const [tags, setTags] = useState("");
+  const [productUrl, setProductUrl] = useState("");
   const [type, setType] = useState("工具");
   const [status, setStatus] = useState("早期测试");
   const [visibility, setVisibility] = useState<"published" | "private">("published");
@@ -53,6 +53,8 @@ return <main className="min-h-dvh bg-[#f7f7f4] text-[#171717]">
       <label className="block"><b className="mb-2 block text-sm">一句话介绍</b><textarea required value={description} onChange={e=>setDescription(e.target.value)} rows={3} className="w-full rounded-lg border border-black/15 bg-white px-4 py-3 text-base outline-none"/></label>
       <Choice label="作品类型" items={types} value={type} set={setType}/>
       <Choice label="当前状态" items={statuses} value={status} set={setStatus}/>
+      <label className="block"><b className="mb-2 block text-sm">产品主页或体验链接（选填）</b><input type="url" value={productUrl} onChange={e=>setProductUrl(e.target.value)} placeholder="https://" className="w-full rounded-lg border border-black/15 bg-white px-4 py-3 text-base outline-none"/></label>
+      <label className="block"><b className="mb-2 block text-sm">标签（选填，用逗号分隔）</b><input maxLength={300} value={tags} onChange={e=>setTags(e.target.value)} placeholder="例如：效率、AI、创作" className="w-full rounded-lg border border-black/15 bg-white px-4 py-3 text-base outline-none"/></label>
       <fieldset><legend className="mb-2 text-sm font-medium">谁可以看到</legend><div className="grid gap-2 sm:grid-cols-2">
         <button type="button" onClick={()=>setVisibility("published")} aria-pressed={visibility==="published"} className={`min-h-11 rounded-lg border p-4 text-left ${visibility==="published"?"border-black bg-black text-white":"border-black/15 bg-white text-black/60"}`}><span className="block text-sm font-semibold">公开发布</span><span className={`mt-1 block text-xs ${visibility==="published"?"text-white/65":"text-black/45"}`}>所有人都能在首页和作品链接中看到</span></button>
         <button type="button" onClick={()=>setVisibility("private")} aria-pressed={visibility==="private"} className={`min-h-11 rounded-lg border p-4 text-left ${visibility==="private"?"border-black bg-black text-white":"border-black/15 bg-white text-black/60"}`}><span className="block text-sm font-semibold">仅自己可见</span><span className={`mt-1 block text-xs ${visibility==="private"?"text-white/65":"text-black/45"}`}>只有你能在“我的产品”里查看</span></button>

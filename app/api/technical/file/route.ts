@@ -3,7 +3,7 @@ export async function GET(request: Request) {
   const {DB:db,MEDIA:bucket} = runtime(), key = new URL(request.url).searchParams.get("key");
   const missing = () => new Response(null,{status:404,headers:{"Cache-Control":"private, no-store"}});
   if (!db || !bucket || !key?.startsWith("technical/")) return missing();
-  const file = await db.prepare("SELECT f.name,c.creator_id,c.visibility FROM creation_technical_files f JOIN creations c ON c.id=f.creation_id WHERE f.object_key=?").bind(key).first<{name:string;creator_id:string;visibility:string}>();
+  const file = await db.prepare("SELECT f.name,c.creator_id,c.visibility FROM creation_technical_files f JOIN creations c ON c.id=f.creation_id WHERE f.object_key=? UNION ALL SELECT json_extract(j.value,'$.name') AS name,c.creator_id,c.visibility FROM creation_version_technical t JOIN creation_versions v ON v.id=t.version_id JOIN creations c ON c.id=v.creation_id,json_each(t.data_json,'$.files') j WHERE json_extract(j.value,'$.object_key')=? LIMIT 1").bind(key,key).first<{name:string;creator_id:string;visibility:string}>();
   if (!file) return missing();
   if (file.visibility !== "published") {
     const user = await currentUser(request);
