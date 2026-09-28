@@ -9,7 +9,7 @@ export default async function DirectoryTopicPage({ params }: { params: Promise<{
   const topic = data?.topics.find(item => item.slug === slug);
   if (!data || !topic) notFound();
   return <main className="directory-page">
-    <header className="directory-top"><Link href="/" className="directory-brand">FIRST LOOK <span>一眼</span></Link><Link href="/" className="directory-back"><ArrowLeft size={15}/>返回发现</Link></header>
+    <header className="directory-top"><a href="/" aria-label="First Look（一眼）首页" className="directory-brand">FIRST LOOK <span>一眼</span></a><a href="/" className="directory-back"><ArrowLeft size={15}/>返回发现</a></header>
     <nav className="directory-breadcrumb" aria-label="面包屑导航"><Link href={`/directory/${section}`}>{data.title}</Link><span>/</span><span>{topic.title}</span></nav>
     <section className="directory-hero directory-topic-hero"><p>{data.eyebrow} / {topic.title}</p><h1>{topic.title}</h1><div>{topic.description}</div></section>
     <section className="directory-empty"><span>FIRST LOOK · 一眼</span><h2>好内容，正在路上。</h2><p>如有内容想分享，欢迎通过下方邮箱发送给我们。</p><a className="directory-contact" href="mailto:server@firstlooklab.cn">server@firstlooklab.cn</a></section>
