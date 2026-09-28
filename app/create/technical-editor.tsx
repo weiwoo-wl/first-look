@@ -2,7 +2,7 @@
 import type { TechnicalLink } from "../lib/technical";
 import { allowedTechnicalName, TECHNICAL_EXTENSIONS, TECHNICAL_MAX_SIZE } from "../lib/technical";
 type Props = {notes:string;links:TechnicalLink[];files:File[];disabled:boolean;onNotes:(value:string)=>void;onLinks:(value:TechnicalLink[])=>void;onFiles:(value:File[])=>void;onError:(value:string)=>void};
-const input = "w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-black/60";
+const input = "w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-base outline-none focus:border-black/60 sm:text-sm";
 export default function TechnicalEditor({notes,links,files,disabled,onNotes,onLinks,onFiles,onError}:Props) {
   function choose(list:FileList|null) {
     if (!list) return;
@@ -21,6 +21,6 @@ export default function TechnicalEditor({notes,links,files,disabled,onNotes,onLi
       <label className="block text-xs">用途说明（选填）<input maxLength={500} value={link.description} onChange={e=>onLinks(links.map((x,i)=>i===index?{...x,description:e.target.value}:x))} className={input+" mt-1"} /></label>
       <button type="button" onClick={()=>onLinks(links.filter((_,i)=>i!==index))} className="text-xs text-red-700">移除这个链接</button>
     </div>)}{links.length<8&&<button type="button" onClick={()=>onLinks([...links,{title:"",url:"",description:""}])} className="rounded-full border border-black/15 bg-white px-4 py-2 text-xs">＋ 添加资源链接</button>}</div>
-    <div className="space-y-2"><label className="block text-sm font-medium">资料文件<input type="file" multiple accept={TECHNICAL_EXTENSIONS.join(",")} onChange={e=>{choose(e.target.files);e.target.value="";}} className="mt-2 block w-full text-xs file:mr-3 file:rounded-full file:border file:border-black/15 file:bg-white file:px-4 file:py-2" /></label><p className="text-xs leading-5 text-black/45">SKILL.md、脚本、ZIP 等；最多 5 份，每份 10MB。文件以下载方式分享。</p>{files.map((file,index)=><div key={index} className="flex items-center justify-between gap-3 rounded-lg bg-white p-3 text-xs"><span className="break-all">{file.name}</span><button type="button" onClick={()=>onFiles(files.filter((_,i)=>i!==index))} className="shrink-0 text-red-700" aria-label={`移除 ${file.name}`}>移除</button></div>)}</div>
+    <div className="space-y-2"><label className="block text-sm font-medium">资料文件<input type="file" multiple accept={TECHNICAL_EXTENSIONS.join(",")} onChange={e=>{choose(e.target.files);e.target.value="";}} className="mt-2 block w-full text-base sm:text-xs file:mr-3 file:rounded-full file:border file:border-black/15 file:bg-white file:px-4 file:py-2" /></label><p className="text-xs leading-5 text-black/45">SKILL.md、脚本、ZIP 等；最多 5 份，每份 10MB。文件以下载方式分享。</p>{files.map((file,index)=><div key={index} className="flex items-center justify-between gap-3 rounded-lg bg-white p-3 text-xs"><span className="break-all">{file.name}</span><button type="button" onClick={()=>onFiles(files.filter((_,i)=>i!==index))} className="min-h-11 shrink-0 px-3 text-red-700" aria-label={`移除 ${file.name}`}>移除</button></div>)}</div>
   </fieldset>;
 }
