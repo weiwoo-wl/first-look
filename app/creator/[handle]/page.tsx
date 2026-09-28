@@ -5,8 +5,9 @@ import { ArrowLeft, Check, Copy, ExternalLink, Mail, Pencil, Share2 } from "luci
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import ProductEntryAction from "../../components/product-entry-action";
 
-type Product={id:number;slug:string;title:string;description:string;type:string;created_at:string;likes:number;favorites:number;views:number;media:{object_key:string;media_type:string;mime_type:string}[]};
+type Product={id:number;slug:string;title:string;description:string;type:string;product_url?:string;created_at:string;likes:number;favorites:number;views:number;media:{object_key:string;media_type:string;mime_type:string}[]};
 type Data={profile:{displayName:string;handle:string;bio:string;avatarUrl:string|null;contactEmail:string|null;isOwner:boolean};products:Product[];redirectHandle?:string};
 
 export default function CreatorPublicPage() {
@@ -146,7 +147,8 @@ export default function CreatorPublicPage() {
             {products.map((product) => {
               const media = product.media[0];
               return (
-                <Link key={product.id} href={`/work/${encodeURIComponent(product.slug)}`} className="group">
+                <div key={product.id}>
+                <Link href={`/work/${encodeURIComponent(product.slug)}`} className="group block">
                   <div className="aspect-[4/3] overflow-hidden bg-black/[.06]">
                     {media && (media.media_type === "image" || media.mime_type.startsWith("image/")) ? (
                       <img src={`/api/media/file?key=${encodeURIComponent(media.object_key)}`} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
@@ -165,6 +167,8 @@ export default function CreatorPublicPage() {
                   </div>
                   <p className="mt-3 text-xs text-black/35">{product.type} · {product.likes} 喜欢 · {product.views} 浏览</p>
                 </Link>
+                {product.product_url && <div className="mt-3"><ProductEntryAction value={product.product_url} /></div>}
+                </div>
               );
             })}
           </div>
