@@ -1,6 +1,7 @@
 import { currentUser, runtime, sameOrigin } from "../../../lib/auth";
 import { ensureCreationTables, recordCreationEvent } from "../../../lib/creations";
 import { ensureCreatorProfileTables } from "../../../lib/creator-profile";
+import { readVisitorId, visitorJson } from "../../../lib/visitor-identity";
 
 export async function GET(request: Request) {
   const db = runtime().DB, creationId = Number(new URL(request.url).searchParams.get("creationId"));
@@ -16,8 +17,9 @@ export async function GET(request: Request) {
     db.prepare("SELECT COUNT(*) AS total FROM creation_shares WHERE creation_id=?").bind(creationId).first<{ total: number }>(),
     db.prepare("SELECT COUNT(*) AS total FROM creation_views WHERE creation_id=?").bind(creationId).first<{ total: number }>(),
   ]);
-  const liked = user ? await db.prepare("SELECT id FROM creation_likes WHERE creation_id=? AND user_id=?").bind(creationId, user.id).first() : null;
-  const favorited = user ? await db.prepare("SELECT id FROM creation_favorites WHERE creation_id=? AND user_id=?").bind(creationId, user.id).first() : null;
+  const identity = user?.id || (readVisitorId(request) ? `visitor:${readVisitorId(request)}` : null);
+  const liked = identity ? await db.prepare("SELECT id FROM creation_likes WHERE creation_id=? AND user_id=?").bind(creationId, identity).first() : null;
+  const favorited = identity ? await db.prepare("SELECT id FROM creation_favorites WHERE creation_id=? AND user_id=?").bind(creationId, identity).first() : null;
   return Response.json({ likes: Number(likes?.total || 0), favorites: Number(favorites?.total || 0), shares: Number(shares?.total || 0), views: Number(views?.total || 0), liked: Boolean(liked), favorited: Boolean(favorited), contactEmail: product.contact_email, slug: product.slug });
 }
 
@@ -38,11 +40,11 @@ export async function POST(request: Request) {
     if (!cookie && !user) headers.set("Set-Cookie", `firstlook_viewer=${visitorKey.slice(8)}; Max-Age=31536000; Path=/; SameSite=Lax`);
     return new Response(JSON.stringify({ ok: true, views: Number(views?.total || 0) }), { headers });
   }
-  const user = await currentUser(request);
-  if (!user) return Response.json({ error: "请先登录后再收藏" }, { status: 401 });
-  const existing = await db.prepare("SELECT id FROM creation_favorites WHERE creation_id=? AND user_id=?").bind(id, user.id).first<{ id: number }>();
-  if (existing) await db.prepare("DELETE FROM creation_favorites WHERE id=?").bind(existing.id).run(); else await db.prepare("INSERT INTO creation_favorites(creation_id,user_id) VALUES(?,?)").bind(id, user.id).run();
+  const user = await currentUser(request), cookieId = user ? null : readVisitorId(request), visitorId = cookieId || crypto.randomUUID(), identity = user?.id || `visitor:${visitorId}`;
+  const existing = await db.prepare("SELECT id FROM creation_favorites WHERE creation_id=? AND user_id=?").bind(id, identity).first<{ id: number }>();
+  if (existing) await db.prepare("DELETE FROM creation_favorites WHERE id=?").bind(existing.id).run(); else await db.prepare("INSERT INTO creation_favorites(creation_id,user_id) VALUES(?,?)").bind(id, identity).run();
   const favorites = await db.prepare("SELECT COUNT(*) AS total FROM creation_favorites WHERE creation_id=?").bind(id).first<{ total: number }>();
-  await recordCreationEvent(db, id, user.id, existing ? "unfavorited" : "favorited", existing ? "取消收藏" : "收藏了产品");
-  return Response.json({ ok: true, favorited: !existing, favorites: Number(favorites?.total || 0) });
+  await recordCreationEvent(db, id, identity, existing ? "unfavorited" : "favorited", existing ? "取消收藏" : "收藏了产品");
+  const result = { ok: true, favorited: !existing, favorites: Number(favorites?.total || 0) };
+  return user ? Response.json(result) : visitorJson(request, visitorId, result);
 }
