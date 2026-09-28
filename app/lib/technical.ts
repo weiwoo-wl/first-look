@@ -12,11 +12,14 @@ export function resourceLinkTitle(value: string) {
   try {
     const url = new URL(value);
     if (url.protocol === "http:" || url.protocol === "https:") return url.hostname;
+    if (url.protocol !== "javascript:" && url.protocol !== "data:" && url.protocol !== "vbscript:") return "应用跳转";
   } catch {}
   return "打开资源";
 }
 export function isWebResourceLink(value: string) {
-  return /^https?:\/\//i.test(value);
+  const link = value.trim();
+  if (/^https?:\/\//i.test(link)) return true;
+  return /^(?!javascript:|data:|vbscript:)[a-z][a-z\d+.-]*:\S+$/i.test(link);
 }
 export function normalizeResourceValue(value: string) {
   const result = value.trim();
