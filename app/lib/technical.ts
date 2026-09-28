@@ -7,6 +7,17 @@ export const TECHNICAL_MAX_SIZE = UPLOAD_LIMITS.technical;
 export function allowedTechnicalName(name: string) {
   return TECHNICAL_EXTENSIONS.some(extension => name.toLowerCase().endsWith(extension));
 }
+export function resourceLinkTitle(value: string) {
+  if (/^#小程序:\/\//.test(value.trim())) return "微信小程序";
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:") return url.hostname;
+  } catch {}
+  return "打开资源";
+}
+export function isWebResourceLink(value: string) {
+  return /^https?:\/\//i.test(value);
+}
 export function normalizeTechnical(value: unknown): Omit<Technical, "files"> {
   if (value == null) return { notes: "", links: [] };
   if (typeof value !== "object") throw Error("技术分享格式不正确");
@@ -20,15 +31,20 @@ export function normalizeTechnical(value: unknown): Omit<Technical, "files"> {
   const links = rows.map(row => {
     if (!row || typeof row !== "object") throw Error("资源链接格式不正确");
     const item = row as Record<string, unknown>;
-    if (typeof item.url !== "string" || item.url.length > 2048) throw Error("请填写有效的资源链接");
-    let url: URL;
-    try { url = new URL(item.url); } catch { throw Error("资源链接应以 https:// 或 http:// 开头"); }
-    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw Error("资源链接应使用 http 或 https 地址");
-    const title = typeof item.title === "string" ? item.title.trim() : "";
+    if (typeof item.url !== "string") throw Error("请填写资源链接或口令");
+    const url = item.url.trim();
+    if (!url) return null;
+    if (url.length > 2048 || /[\u0000-\u001f\u007f]/.test(url) || /^(javascript|data|vbscript):/i.test(url)) throw Error("资源链接或口令格式不正确");
+    if (/^https?:\/\//i.test(url)) {
+      let parsed: URL;
+      try { parsed = new URL(url); } catch { throw Error("网址格式不正确"); }
+      if (!["https:", "http:"].includes(parsed.protocol) || parsed.username || parsed.password) throw Error("网址格式不正确");
+    }
+    const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : resourceLinkTitle(url);
     const description = typeof item.description === "string" ? item.description.trim() : "";
-    if (!title || title.length > 100 || description.length > 500) throw Error("请填写资源名称（100 字以内）和简短说明（500 字以内）");
-    return { title, url: url.href, description };
-  });
+    if (title.length > 100 || description.length > 500) throw Error("资源链接信息过长");
+    return { title, url, description };
+  }).filter((item): item is TechnicalLink => item !== null);
   return { notes, links };
 }
 export async function readTechnical(db: D1Database, creationId: number): Promise<Technical> {
