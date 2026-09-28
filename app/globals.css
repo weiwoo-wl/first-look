@@ -369,7 +369,7 @@ body {
 .directory-empty > span { color: rgba(23,23,23,.42); font-size: 9px; font-weight: 700; letter-spacing: .14em; }
 .directory-empty h2 { margin-top: 20px; font-size: clamp(24px,4vw,36px); font-weight: 600; letter-spacing: -.06em; }
 .directory-empty p { max-width: 520px; margin-top: 10px; color: rgba(23,23,23,.55); font-size: 14px; line-height: 1.7; }
-.directory-empty a { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; padding: 10px 16px; border-radius: 999px; background: #171717; color: white; font-size: 12px; }
+.directory-empty .directory-contact { display: inline-flex; margin-top: 18px; color: rgba(23,23,23,.7); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .directory-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; border-top: 1px solid rgba(23,23,23,.12); color: rgba(23,23,23,.45); font-size: 10px; letter-spacing: .04em; }
 @media (max-width: 760px) { .directory-page { padding-inline: 20px; } .directory-topic-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .directory-topic-card { min-height: 210px; padding: 19px; } .directory-topic-card h3 { margin-top: 32px; font-size: 19px; } .directory-topics { padding-bottom: 64px; } }
 @media (max-width: 480px) { .directory-topic-grid { grid-template-columns: 1fr; } .directory-topic-card { min-height: 190px; } .directory-topic-card h3 { margin-top: 26px; } .directory-section-heading > span { max-width: 130px; text-align: right; } .directory-footer { flex-wrap: wrap; padding-block: 14px; } }
