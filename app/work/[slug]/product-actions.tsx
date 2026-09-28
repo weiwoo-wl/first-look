@@ -3,7 +3,7 @@ import { Check, ChevronDown, Copy, Heart, Image as ImageIcon, Link2, Share2, Sta
 import { useEffect, useRef, useState } from "react";
 import ReportButton from "./report-button";
 import ProductSharePoster from "./product-share-poster";
-type State = { likes: number; favorites: number; shares: number; views: number; liked: boolean; favorited: boolean; contactEmail?: string | null; title?: string; description?: string };
+type State = { likes: number; favorites: number; shares: number; views: number; liked: boolean; favorited: boolean; selfInteractionLimited?: boolean; selfLikeUsed?: boolean; selfFavoriteUsed?: boolean; selfShareUsed?: boolean; selfViewUsed?: boolean; contactEmail?: string | null; title?: string; description?: string };
 type PosterMedia = { object_key: string; media_type: string };
 export default function ProductActions({ creationId, slug, title, description, media }: { creationId: number; slug: string; title: string; description: string; media: PosterMedia[] }) {
   const [state, setState] = useState<State>({ likes: 0, favorites: 0, shares: 0, views: 0, liked: false, favorited: false }), [shareStatus, setShareStatus] = useState<"shared" | "copied" | "mobile-copied" | null>(null), [error, setError] = useState("");
@@ -44,7 +44,7 @@ export default function ProductActions({ creationId, slug, title, description, m
       catch { setError("此浏览器不支持直接分享，复制链接也失败了，请长按网址复制"); return; }
     }
     const response = await fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source }) }).catch(() => null);
-    if (response?.ok) setState((current) => ({ ...current, shares: current.shares + 1 }));
+    if (response?.ok) { const data = await response.json() as { shares?: number }; if (typeof data.shares === "number") setState((current) => ({ ...current, shares: data.shares! })); }
     setShareStatus(source === "native-share" ? "shared" : /android|iphone|ipad|ipod/i.test(navigator.userAgent) ? "mobile-copied" : "copied");
     setTimeout(() => setShareStatus(null), 3500);
   }
@@ -52,8 +52,8 @@ export default function ProductActions({ creationId, slug, title, description, m
 
   return <div className="product-actions mt-8">
     <div className="flex flex-wrap items-center gap-3">
-      <button onClick={like} className={`product-action-trigger inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.liked ? "bg-[#e15d36] text-white" : "bg-black text-white"}`}><Heart size={16} fill={state.liked ? "currentColor" : "none"} />{state.liked ? "已喜欢" : "喜欢"}<span className="text-xs opacity-65">{state.likes}</span></button>
-      <button onClick={favorite} className={`product-action-trigger inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium ${state.favorited ? "bg-[#e15d36] text-white" : "border border-black/15 bg-white text-black"}`}><Star size={16} fill={state.favorited ? "currentColor" : "none"} />{state.favorited ? "已收藏" : "收藏"}<span className="text-xs opacity-65">{state.favorites}</span></button>
+      <button onClick={like} disabled={Boolean(state.selfInteractionLimited && (state.selfLikeUsed || state.liked))} className={`product-action-trigger inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-55 ${state.liked ? "bg-[#e15d36] text-white" : "bg-black text-white"}`}><Heart size={16} fill={state.liked ? "currentColor" : "none"} />{state.liked ? "已喜欢" : state.selfInteractionLimited && state.selfLikeUsed ? "已点过" : "喜欢"}<span className="text-xs opacity-65">{state.likes}</span></button>
+      <button onClick={favorite} disabled={Boolean(state.selfInteractionLimited && (state.selfFavoriteUsed || state.favorited))} className={`product-action-trigger inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-55 ${state.favorited ? "bg-[#e15d36] text-white" : "border border-black/15 bg-white text-black"}`}><Star size={16} fill={state.favorited ? "currentColor" : "none"} />{state.favorited ? "已收藏" : state.selfInteractionLimited && state.selfFavoriteUsed ? "已点过" : "收藏"}<span className="text-xs opacity-65">{state.favorites}</span></button>
       <div ref={shareMenuRef} className="relative">
         <button type="button" aria-haspopup="menu" aria-expanded={shareMenuOpen} onClick={() => setShareMenuOpen((open) => !open)} className="product-action-trigger inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium"><Share2 size={16} />分享<ChevronDown size={14} className={`transition-transform ${shareMenuOpen ? "rotate-180" : ""}`} /></button>
         {shareMenuOpen && <div role="menu" aria-label="分享方式" className="absolute left-0 top-full z-40 mt-2 min-w-44 overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-xl">
@@ -64,10 +64,10 @@ export default function ProductActions({ creationId, slug, title, description, m
       {state.contactEmail && <button type="button" onClick={() => setContactOpen((open) => !open)} aria-expanded={contactOpen} className="product-action-trigger inline-flex items-center rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-medium">联系创作者</button>}
       <ReportButton creationId={creationId} />
     </div>
-    <p className="mt-3 text-xs text-black/40">浏览、喜欢和收藏无需登录</p>
+    <p className="mt-3 text-xs text-black/40">{state.selfInteractionLimited ? "创作者对自己的产品，每项互动只计一次" : "浏览、喜欢和收藏无需登录"}</p>
     {contactOpen && state.contactEmail && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white p-4"><span className="select-all break-all text-sm font-medium">{state.contactEmail}</span><button type="button" onClick={() => void copyContactEmail()} className="inline-flex items-center gap-2 rounded-full border border-black/15 px-4 py-2 text-xs font-medium">{emailCopied ? <Check size={14} /> : <Copy size={14} />}{emailCopied ? "已复制" : "复制邮箱"}</button></div>}
     {shareStatus && <p role="status" className="mt-3 text-sm text-black/55">{shareStatus === "shared" ? "系统分享已完成" : shareStatus === "mobile-copied" ? "链接已复制，可粘贴到微信聊天" : "链接已复制"}</p>}
-    {posterOpen && <ProductSharePoster open={posterOpen} onClose={() => setPosterOpen(false)} title={title || state.title || "First Look 产品"} description={description || state.description || "发现一件新作品"} slug={slug} media={media} onShared={() => { fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source: "native-share" }) }).then((response) => { if (response.ok) setState((current) => ({ ...current, shares: current.shares + 1 })); }).catch(() => undefined); }} />}
+    {posterOpen && <ProductSharePoster open={posterOpen} onClose={() => setPosterOpen(false)} title={title || state.title || "First Look 产品"} description={description || state.description || "发现一件新作品"} slug={slug} media={media} onShared={() => { fetch("/api/creations/actions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ creationId, action: "share", source: "native-share" }) }).then(async (response) => { if (response.ok) { const data = await response.json() as { shares?: number }; if (typeof data.shares === "number") setState((current) => ({ ...current, shares: data.shares! })); } }).catch(() => undefined); }} />}
     <div className="mt-4 flex items-center gap-4 text-xs text-black/45"><span>{state.views} 次浏览</span><span>{state.shares} 次分享</span></div>
     {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
   </div>;
