@@ -55,7 +55,7 @@ export default function InteractionsPage() {
   const title = tabs.find((item) => item.id === tab)?.label || "我的互动";
 
   return <main className="min-h-dvh bg-[#f7f7f4] px-5 py-10 text-[#171717]"><section className="mx-auto max-w-3xl">
-    <Link href="/account" className="inline-flex min-h-11 items-center gap-2 text-sm text-black/50"><ArrowLeft size={16} />创作者中心</Link>
+    <a href="/account" className="inline-flex min-h-11 items-center gap-2 text-sm text-black/50"><ArrowLeft size={16} />创作者中心</a>
     <p className="mt-8 text-sm text-black/45">互动记录</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.06em]">我的互动</h1>
     <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4" role="tablist" aria-label="互动类型">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-3 text-sm ${tab === id ? "border-black bg-black text-white" : "border-black/12 bg-white text-black/65"}`}><Icon size={15} />{label}</button>)}</div>
     <section className="mt-6 min-h-64 border-y border-black/10" aria-label={title}>
