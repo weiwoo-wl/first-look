@@ -1,6 +1,6 @@
 import { currentUser, runtime, sameOrigin } from "../../../lib/auth";
 import { ensureCreationTables, parseTags } from "../../../lib/creations";
-import { normalizeTechnical, readTechnical, type TechnicalFile, type TechnicalLink } from "../../../lib/technical";
+import { normalizeResourceValue, normalizeTechnical, readTechnical, type TechnicalFile, type TechnicalLink } from "../../../lib/technical";
 import { UPLOAD_LIMITS } from "../../../lib/upload-limits";
 import type { UploadReservation } from "../../../lib/storage-quota";
 
@@ -46,7 +46,7 @@ export async function PATCH(request: Request) {
   if (!productTypes.includes(type) || !productStatuses.includes(status)) return Response.json({ error: "请选择有效的作品类型和当前状态" }, { status: 400 });
   if (story.length > 2000) return Response.json({ error: "创作故事不能超过 2000 个字" }, { status: 400 });
   if (tagItems.length > 8 || tagItems.some((tag) => tag.length > 40)) return Response.json({ error: "标签最多 8 个，每个不超过 40 个字" }, { status: 400 });
-  if (productUrl) { try { const url = new URL(productUrl); if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error(); } catch { return Response.json({ error: "产品链接需要是有效的 http 或 https 地址" }, { status: 400 }); } }
+  if (productUrl) { try { normalizeResourceValue(productUrl); } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "产品入口格式不正确" }, { status: 400 }); } }
   if (body.media.length > 8 || body.mediaUploads.length > 8 || body.technicalFileKeys.length > 5) return Response.json({ error: "最多添加 8 个图片或视频、5 份资料文件" }, { status: 400 });
   if (body.media.some((item) => !item || !["existing", "upload"].includes(item.kind) || typeof item.key !== "string") || new Set(body.media.map((item) => item.key)).size !== body.media.length || new Set(body.technicalFileKeys).size !== body.technicalFileKeys.length) return Response.json({ error: "媒体或资料清单不正确" }, { status: 400 });
   let technical: { notes: string; links: TechnicalLink[] };

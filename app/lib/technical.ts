@@ -18,6 +18,16 @@ export function resourceLinkTitle(value: string) {
 export function isWebResourceLink(value: string) {
   return /^https?:\/\//i.test(value);
 }
+export function normalizeResourceValue(value: string) {
+  const result = value.trim();
+  if (!result || result.length > 2048 || /[\u0000-\u001f\u007f]/.test(result) || /^(javascript|data|vbscript):/i.test(result)) throw Error("入口内容格式不正确");
+  if (isWebResourceLink(result)) {
+    let parsed: URL;
+    try { parsed = new URL(result); } catch { throw Error("网址格式不正确"); }
+    if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) throw Error("网址格式不正确");
+  }
+  return result;
+}
 export function normalizeTechnical(value: unknown): Omit<Technical, "files"> {
   if (value == null) return { notes: "", links: [] };
   if (typeof value !== "object") throw Error("技术分享格式不正确");
@@ -34,12 +44,7 @@ export function normalizeTechnical(value: unknown): Omit<Technical, "files"> {
     if (typeof item.url !== "string") throw Error("请填写资源链接或口令");
     const url = item.url.trim();
     if (!url) return null;
-    if (url.length > 2048 || /[\u0000-\u001f\u007f]/.test(url) || /^(javascript|data|vbscript):/i.test(url)) throw Error("资源链接或口令格式不正确");
-    if (/^https?:\/\//i.test(url)) {
-      let parsed: URL;
-      try { parsed = new URL(url); } catch { throw Error("网址格式不正确"); }
-      if (!["https:", "http:"].includes(parsed.protocol) || parsed.username || parsed.password) throw Error("网址格式不正确");
-    }
+    try { normalizeResourceValue(url); } catch { throw Error("资源链接或口令格式不正确"); }
     const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : resourceLinkTitle(url);
     const description = typeof item.description === "string" ? item.description.trim() : "";
     if (title.length > 100 || description.length > 500) throw Error("资源链接信息过长");

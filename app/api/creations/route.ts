@@ -1,4 +1,4 @@
-import { normalizeTechnical, readTechnical } from "../../lib/technical";
+import { normalizeResourceValue, normalizeTechnical, readTechnical } from "../../lib/technical";
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { creations } from "../../../db/schema";
@@ -35,7 +35,9 @@ async function postCreation(request: Request) {
   if (title.length < 2 || title.length > 80) return Response.json({ error: "作品名称需要为 2 到 80 个字" }, { status: 400 });
   if (description.length < 10 || description.length > 500) return Response.json({ error: "一句话介绍需要为 10 到 500 个字" }, { status: 400 });
   if (body.story && body.story.trim().length > 2000) return Response.json({ error: "创作故事不能超过 2000 个字" }, { status: 400 });
-  if (body.productUrl && body.productUrl.trim() && !/^https?:\/\//i.test(body.productUrl.trim())) return Response.json({ error: "产品链接需要以 http:// 或 https:// 开头" }, { status: 400 });
+  let productUrl = "";
+  try { if (body.productUrl?.trim()) productUrl = normalizeResourceValue(body.productUrl); }
+  catch (error) { return Response.json({ error: error instanceof Error ? error.message : "产品入口格式不正确" }, { status: 400 }); }
 
   let technical;
   try { technical = normalizeTechnical(body.technical); }
@@ -48,7 +50,7 @@ async function postCreation(request: Request) {
   const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
   const [creation] = await db.insert(creations).values({
     slug, title, description, type,
-    status: body.status || "早期测试", story: body.story || "", tags: parseTags(body.tags), productUrl: body.productUrl?.trim() || "", creatorId: user.id,
+    status: body.status || "早期测试", story: body.story || "", tags: parseTags(body.tags), productUrl, creatorId: user.id,
     creatorName: user.displayName, contactEmailVisible: 0,
     visibility: pending ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),
   }).returning();
