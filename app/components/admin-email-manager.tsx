@@ -1,8 +1,9 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type User = { id: string; email: string; display_name: string; disabled_at: string | null };
 type Delivery = { userId: string; email: string; status: string };
+type MailRecord = { batchId: string; createdAt: string; subject: string; body: string; recipients: { email: string; status: string }[] };
 const statusLabel: Record<string, string> = { sent: "已提交发送", failed: "发送失败", sending: "发送中，暂勿重发", unavailable: "账号不可用", pending: "待发送" };
 
 export default function AdminEmailManager({ users }: { users: User[] }) {
@@ -10,6 +11,19 @@ export default function AdminEmailManager({ users }: { users: User[] }) {
   const [subject, setSubject] = useState(""), [body, setBody] = useState("");
   const [sending, setSending] = useState(false), [error, setError] = useState(""), [results, setResults] = useState<Delivery[]>([]);
   const [interrupted, setInterrupted] = useState(false);
+  const [history, setHistory] = useState<MailRecord[]>([]), [historyPage, setHistoryPage] = useState(1);
+  const [historyLoading, setHistoryLoading] = useState(true), [historyError, setHistoryError] = useState(""), [hasMore, setHasMore] = useState(false), [historyVersion, setHistoryVersion] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch(`/api/admin/email?page=${historyPage}`, { cache: "no-store", signal: controller.signal }).then(async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "无法加载发送记录");
+      if (!controller.signal.aborted) { setHistory(data.records); setHasMore(data.hasMore); }
+    }).catch(problem => { if (!controller.signal.aborted) setHistoryError(problem instanceof Error ? problem.message : "无法加载发送记录"); })
+      .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
+    return () => controller.abort();
+  }, [historyPage, historyVersion]);
+  function reloadHistory(page = historyPage) { setHistoryLoading(true); setHistoryError(""); setHistoryPage(page); setHistoryVersion(value => value + 1); }
   const sendingRef = useRef(false);
   const draft = useRef<{ batchId: string; ids: string[]; subject: string; body: string } | null>(null);
   const visible = useMemo(() => users.filter(user => `${user.display_name} ${user.email}`.toLowerCase().includes(query.toLowerCase())), [users, query]);
@@ -35,7 +49,7 @@ export default function AdminEmailManager({ users }: { users: User[] }) {
       }
       complete = true;
     } catch (problem) { setInterrupted(true); setError(problem instanceof Error ? problem.message : "发送中断，请点击继续发送"); }
-    finally { sendingRef.current = false; setSending(false); if (complete) { draft.current = null; setSelected([]); setInterrupted(false); } }
+    finally { sendingRef.current = false; setSending(false); reloadHistory(1); if (complete) { draft.current = null; setSelected([]); setInterrupted(false); } }
   }
   return <section className="admin-panel">
     <div className="admin-panel-title"><h2>发送邮件</h2><span>每位用户单独收到</span></div>
@@ -52,6 +66,16 @@ export default function AdminEmailManager({ users }: { users: User[] }) {
         {error&&<p role="alert" className="text-sm text-red-600">{error}</p>}
         {results.length>0&&<div role="status" className="rounded-lg border border-black/10 p-3"><p className="mb-2 text-sm font-medium">已提交 {sent} 封 / 共 {results.length} 封</p>{results.map(item=><p key={item.userId} className="break-all py-1 text-xs">{item.email} · {statusLabel[item.status]||item.status}</p>)}</div>}
       </div>
+    </div>
+    <div className="border-t border-black/10 p-5">
+      <div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-semibold">发送记录</h3><button type="button" disabled={historyLoading} onClick={()=>reloadHistory()} className="text-sm underline disabled:opacity-40">刷新记录</button></div>
+      <p className="mb-4 text-xs text-black/50">已提交发送表示邮件服务已接受，不代表进入收件箱。这里保留后台手动发送的邮件。</p>
+      {historyLoading?<p role="status" className="text-sm text-black/50">正在加载记录…</p>:historyError?<p role="alert" className="text-sm text-red-600">{historyError}</p>:history.length?history.map(record=><details key={record.batchId} className="mb-3 rounded-lg border border-black/10 p-4">
+        <summary className="cursor-pointer break-words text-sm"><strong>{record.subject}</strong><span className="mt-1 block text-xs text-black/50">{new Date(record.createdAt.replace(" ","T")+"Z").toLocaleString("zh-CN")} · {record.recipients.length} 位收件人 · 已提交 {record.recipients.filter(item=>item.status==="sent").length} 封</span></summary>
+        <div className="mt-4 whitespace-pre-wrap break-words rounded-lg bg-black/5 p-4 text-sm">{record.body}{"\n\nFirst Look 一眼\n联系我们：server@firstlooklab.cn"}</div>
+        <h4 className="mb-2 mt-4 text-sm font-medium">收件人及发送状态</h4><div className="max-h-64 overflow-auto">{record.recipients.map(item=><p key={item.email} className="break-all py-1 text-xs">{item.email} · {statusLabel[item.status]||item.status}</p>)}</div>
+      </details>):<p className="text-sm text-black/50">还没有发送记录</p>}
+      <div className="mt-4 flex items-center gap-4 text-sm"><button type="button" disabled={historyLoading||historyPage===1} onClick={()=>reloadHistory(historyPage-1)} className="disabled:opacity-30">上一页</button><span>第 {historyPage} 页</span><button type="button" disabled={historyLoading||!hasMore} onClick={()=>reloadHistory(historyPage+1)} className="disabled:opacity-30">下一页</button></div>
     </div>
   </section>;
 }

@@ -2,6 +2,25 @@ import { currentAdmin, logAdminAction } from "../../../lib/admin";
 import { normalizeEmail, runtime, sameOrigin } from "../../../lib/auth";
 import { sendAdminEmail } from "../../../lib/smtp";
 
+export async function GET(request: Request) {
+  const admin = await currentAdmin(request);
+  if (!admin) return Response.json({ error: "只有管理员可以查看发送记录" }, { status: 403 });
+  const { DB: db } = runtime();
+  if (!db) return Response.json({ error: "邮件记录暂不可用" }, { status: 503 });
+  const page = Number(new URL(request.url).searchParams.get("page") || "1");
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100000) return Response.json({ error: "页码无效" }, { status: 400 });
+  const exists = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admin_mail_deliveries'").first();
+  if (!exists) return Response.json({ records: [], hasMore: false }, { headers: { "Cache-Control": "no-store" } });
+  const batches = await db.prepare("SELECT batch_id,MIN(created_at) AS created_at FROM admin_mail_deliveries GROUP BY batch_id ORDER BY created_at DESC,batch_id DESC LIMIT 21 OFFSET ?").bind((page - 1) * 20).all<{ batch_id: string; created_at: string }>();
+  const records = [];
+  for (const batch of batches.results.slice(0, 20)) {
+    const rows = await db.prepare("SELECT email,status,subject,body FROM admin_mail_deliveries WHERE batch_id=? ORDER BY email").bind(batch.batch_id).all<{ email: string; status: string; subject: string; body: string }>();
+    const first = rows.results[0];
+    if (first) records.push({ batchId: batch.batch_id, createdAt: batch.created_at, subject: first.subject, body: first.body, recipients: rows.results.map(({ email, status }) => ({ email, status })) });
+  }
+  return Response.json({ records, hasMore: batches.results.length > 20 }, { headers: { "Cache-Control": "no-store" } });
+}
+
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "请求来源无效" }, { status: 403 });
   const admin = await currentAdmin(request);
