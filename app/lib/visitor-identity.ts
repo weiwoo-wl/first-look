@@ -6,7 +6,7 @@ export function readVisitorId(request: Request) {
 }
 
 export function visitorJson(request: Request, visitorId: string, body: unknown) {
-  const headers = new Headers({ "Content-Type": "application/json; charset=utf-8" });
+  const headers = new Headers({ "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, no-store" });
   if (!readVisitorId(request)) headers.set("Set-Cookie", `${viewerCookieName}=${visitorId}; Max-Age=31536000; Path=/; SameSite=Lax; Secure; HttpOnly`);
   return new Response(JSON.stringify(body), { headers });
 }

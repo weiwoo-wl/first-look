@@ -1,4 +1,5 @@
 import { readTechnical } from "./technical";
+import { ensureEngagementTables } from "./engagement";
 
 type CreationDb = D1Database;
 
@@ -24,6 +25,7 @@ export async function ensureCreationTables(db: CreationDb) {
   await db.prepare("CREATE TABLE IF NOT EXISTS creation_edit_uploads(object_key TEXT PRIMARY KEY,creation_id INTEGER NOT NULL,owner_id TEXT NOT NULL,kind TEXT NOT NULL,name TEXT NOT NULL,size INTEGER NOT NULL,mime TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)").run();
   for (const statement of ["ALTER TABLE creations ADD COLUMN tags TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN product_url TEXT NOT NULL DEFAULT ''", "ALTER TABLE creations ADD COLUMN updated_at TEXT"]) { try { await db.prepare(statement).run(); } catch {} }
   try { await db.prepare("UPDATE creations SET updated_at=created_at WHERE updated_at IS NULL").run(); } catch {}
+  await ensureEngagementTables(db);
 }
 
 export async function createCreationVersion(db: CreationDb, creationId: number, creatorId: string, changeNote = "") {
@@ -36,7 +38,7 @@ export async function createCreationVersion(db: CreationDb, creationId: number, 
   await db.prepare("INSERT INTO creation_versions(creation_id,creator_id,version_number,title,description,type,status,story,tags,product_url,change_note,media_json)VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(creationId,creatorId,version,creation.title,creation.description,creation.type,creation.status,creation.story||"",creation.tags||"",creation.product_url||"",changeNote,JSON.stringify(media.results||[])).run();
   const savedVersion = await db.prepare("SELECT id FROM creation_versions WHERE creation_id=? AND version_number=?").bind(creationId,version).first<{id:number}>();
   if (savedVersion) await db.prepare("INSERT INTO creation_version_technical(version_id,data_json) VALUES(?,?)").bind(savedVersion.id,JSON.stringify(await readTechnical(db,creationId))).run();
-  const likes = await db.prepare("SELECT COUNT(*) AS total FROM creation_likes WHERE creation_id=?").bind(creationId).first<{total:number}>();
+  const likes = await db.prepare("SELECT COUNT(*) AS total FROM creation_events WHERE creation_id=? AND event_type=\'liked\'").bind(creationId).first<{total:number}>();
   await db.prepare("INSERT INTO creation_events(creation_id,actor_id,event_type,version_number,likes_total,detail)VALUES(?,?,?,?,?,?)").bind(creationId,creatorId,version===1?"published":"updated",version,Number(likes?.total||0),changeNote).run();
   return version;
 }

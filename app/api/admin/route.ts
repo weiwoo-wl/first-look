@@ -1,3 +1,5 @@
+import { ensureCreationTables } from "../../lib/creations";
+import { engagementColumns } from "../../lib/engagement";
 import { currentAdmin, ensureAdminTables, logAdminAction } from "../../lib/admin";
 import { ensureWelcomeEmailTable, runtime, sameOrigin } from "../../lib/auth";
 import { sendWelcomeEmail } from "../../lib/smtp";
@@ -11,9 +13,10 @@ export async function GET(request: Request) {
   if (!admin) return Response.json({ error: "无权访问管理后台" }, { status: 403 });
   await ensureAdminTables(db);
   await ensureWelcomeEmailTable(db);
+  await ensureCreationTables(db);
   const [counts, products, users, reports, actions] = await Promise.all([
     db.prepare("SELECT (SELECT COUNT(*) FROM users) users_total,(SELECT COUNT(*) FROM creations) products_total,(SELECT COUNT(*) FROM creations WHERE visibility='published') published_total,(SELECT COUNT(*) FROM site_reports WHERE status='pending') reports_pending,(SELECT COUNT(*) FROM users u WHERE NOT EXISTS(SELECT 1 FROM welcome_emails w WHERE w.user_id=u.id)) welcome_pending,(SELECT COUNT(*) FROM welcome_emails WHERE status='failed') welcome_failed").first(),
-    db.prepare("SELECT c.id,c.title,c.type,c.creator_name,c.visibility,c.created_at,c.updated_at,CASE WHEN h.creation_id IS NULL THEN 0 ELSE 1 END AS admin_hidden FROM creations c LEFT JOIN admin_hidden_creations h ON h.creation_id=c.id ORDER BY COALESCE(c.updated_at,c.created_at) DESC LIMIT 200").all(),
+    db.prepare(`SELECT c.id,c.title,c.type,c.creator_name,c.visibility,c.created_at,c.updated_at,${engagementColumns()},CASE WHEN h.creation_id IS NULL THEN 0 ELSE 1 END AS admin_hidden FROM creations c LEFT JOIN admin_hidden_creations h ON h.creation_id=c.id ORDER BY COALESCE(c.updated_at,c.created_at) DESC LIMIT 200`).all(),
     db.prepare("SELECT u.id,u.email,u.display_name,u.created_at,u.disabled_at,a.role AS admin_role FROM users u LEFT JOIN site_admins a ON a.user_id=u.id ORDER BY u.created_at DESC LIMIT 200").all(),
     db.prepare("SELECT r.id,r.target_type,r.target_id,r.reason,r.status,r.created_at,u.display_name AS reporter_name FROM site_reports r LEFT JOIN users u ON u.id=r.reporter_id ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC LIMIT 100").all(),
     db.prepare("SELECT a.id,a.action,a.target_type,a.target_id,a.detail,a.created_at,u.display_name AS admin_name FROM admin_actions a LEFT JOIN users u ON u.id=a.admin_id ORDER BY a.created_at DESC LIMIT 20").all(),

@@ -63,14 +63,15 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   lines.forEach((value, index) => ctx.fillText(value, x, y + index * lineHeight));
 }
 
-export default function ProductSharePoster({ open, onClose, title, description, slug, media, onShared }: {
+export default function ProductSharePoster({ open, onClose, title, description, slug, shareUrl, media, onShared }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description: string;
   slug: string;
+  shareUrl: string;
   media: PosterMedia[];
-  onShared: () => void;
+  onShared: () => Promise<void>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -83,6 +84,7 @@ export default function ProductSharePoster({ open, onClose, title, description, 
 
   useEffect(() => {
     if (!open) return;
+    setReady(false);
     let active = true;
     async function renderPoster() {
       const canvas = canvasRef.current;
@@ -147,7 +149,7 @@ export default function ProductSharePoster({ open, onClose, title, description, 
       ctx.font = "20px Arial, sans-serif";
       ctx.fillText("firstlooklab.cn", 60, 1080);
 
-      const qrUrl = new URL(`/work/${encodeURIComponent(slug)}`, location.origin).toString();
+      const qrUrl = shareUrl;
       const qrData = await QRCode.toDataURL(qrUrl, { errorCorrectionLevel: "M", margin: 1, width: 240 });
       const qrImage = await loadImage(qrData);
       ctx.fillStyle = "#fff";
@@ -159,7 +161,7 @@ export default function ProductSharePoster({ open, onClose, title, description, 
       if (active) setError(renderError instanceof Error ? renderError.message : "海报生成失败，请重试");
     });
     return () => { active = false; };
-  }, [open, title, description, slug, coverKey, coverType]);
+  }, [open, title, description, slug, shareUrl, coverKey, coverType]);
 
   async function makeFile() {
     const canvas = canvasRef.current;
@@ -216,7 +218,7 @@ export default function ProductSharePoster({ open, onClose, title, description, 
       }
       try {
         await navigator.share({ files: [file] });
-        onShared();
+        await onShared();
         setMessage("分享菜单已打开；也可以在菜单中选择存储图像。");
       } catch (shareError) {
         if (shareError instanceof DOMException && shareError.name === "AbortError") return;

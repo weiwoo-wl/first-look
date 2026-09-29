@@ -127,7 +127,7 @@ export async function PATCH(request: Request) {
     const versionCount = await db.prepare("SELECT COALESCE(MAX(version_number),0) AS version FROM creation_versions WHERE creation_id=?").bind(id).first<{ version: number }>();
     const hasHistory = Number(versionCount?.version || 0) > 0;
     const version = Number(versionCount?.version || 0) + (hasHistory ? 1 : 2);
-    const likes = await db.prepare("SELECT COUNT(*) AS total FROM creation_likes WHERE creation_id=?").bind(id).first<{ total: number }>();
+    const likes = await db.prepare("SELECT COUNT(*) AS total FROM creation_events WHERE creation_id=? AND event_type=\'liked\'").bind(id).first<{ total: number }>();
     const mediaSnapshot = mediaRows.map(({ object_key, media_type, mime_type, size, sort_order }) => ({ object_key, media_type, mime_type, size, sort_order }));
     const timestamp = new Date().toISOString();
     const statements = [
