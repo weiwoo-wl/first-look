@@ -14,7 +14,8 @@ async function sendTextEmail(to:string,subjectText:string,body:string,password:s
     const message=htmlBody
       ? `From: First Look <noreply@mail.firstlooklab.cn>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${body}\r\n--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${htmlBody}\r\n--${boundary}--\r\n.`
       : `From: First Look <noreply@mail.firstlooklab.cn>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${body}\r\n.`;
-    await cmd(message.slice(0,-3).replace(/\r?\n/g,"\r\n").replace(/^\./gm,"..")+"\r\n.",[250]);
+    const replyableMessage=message.replace("\r\nTo:","\r\nReply-To: First Look <server@firstlooklab.cn>\r\nTo:");
+    await cmd(replyableMessage.slice(0,-3).replace(/\r?\n/g,"\r\n").replace(/^\./gm,"..")+"\r\n.",[250]);
     await cmd("QUIT",[221]);
   }finally{clearTimeout(timeout);w.releaseLock();r.releaseLock();await s.close();}
 }
