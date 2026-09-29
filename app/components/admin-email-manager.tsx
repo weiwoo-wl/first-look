@@ -16,13 +16,18 @@ export default function AdminEmailManager({ users }: { users: User[] }) {
   useEffect(() => {
     const controller = new AbortController();
     void fetch(`/api/admin/email?page=${historyPage}`, { cache: "no-store", signal: controller.signal }).then(async response => {
-      const data = await response.json();
+      const data = await response.json() as { error?: string; records: MailRecord[]; hasMore: boolean };
       if (!response.ok) throw new Error(data.error || "无法加载发送记录");
       if (!controller.signal.aborted) { setHistory(data.records); setHasMore(data.hasMore); }
     }).catch(problem => { if (!controller.signal.aborted) setHistoryError(problem instanceof Error ? problem.message : "无法加载发送记录"); })
       .finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
     return () => controller.abort();
   }, [historyPage, historyVersion]);
+  useEffect(() => {
+    const refresh = () => { setHistoryLoading(true); setHistoryError(""); setHistoryPage(1); setHistoryVersion(value => value + 1); };
+    window.addEventListener("firstlook-mail-sent", refresh);
+    return () => window.removeEventListener("firstlook-mail-sent", refresh);
+  }, []);
   function reloadHistory(page = historyPage) { setHistoryLoading(true); setHistoryError(""); setHistoryPage(page); setHistoryVersion(value => value + 1); }
   const sendingRef = useRef(false);
   const draft = useRef<{ batchId: string; ids: string[]; subject: string; body: string } | null>(null);

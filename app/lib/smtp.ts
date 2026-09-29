@@ -3,7 +3,7 @@ import {connect} from "cloudflare:sockets";
 const enc=new TextEncoder(),dec=new TextDecoder();
 const notificationAccount={hostname:"smtp.qiye.aliyun.com",address:"server@firstlooklab.cn"};
 async function reply(r:ReadableStreamDefaultReader<Uint8Array>){let t="";for(;;){const x=await r.read();if(x.done)throw Error("SMTP closed");t+=dec.decode(x.value,{stream:true});const last=t.split("\r\n").filter(Boolean).at(-1);if(last&&/^\d{3} /.test(last))return Number(last.slice(0,3));}}
-async function sendTextEmail(to:string,subjectText:string,body:string,password:string,htmlBody?:string,account={hostname:"smtpdm.aliyun.com",address:"noreply@mail.firstlooklab.cn"}){
+async function sendTextEmail(to:string,subjectText:string,body:string,password:string,htmlBody?:string,account={hostname:"smtpdm.aliyun.com",address:"noreply@mail.firstlooklab.cn"},thread?:{messageId:string;references:string}){
   const s=connect({hostname:account.hostname,port:465},{secureTransport:"on"}),w=s.writable.getWriter(),r=s.readable.getReader();
   const timeout=setTimeout(()=>{void s.close().catch(()=>{});},20000);
   const cmd=async(line:string,accepted:number[])=>{await w.write(enc.encode(line+"\r\n"));const code=await reply(r);if(!accepted.includes(code))throw Error(`SMTP ${code}`);};
@@ -16,13 +16,21 @@ async function sendTextEmail(to:string,subjectText:string,body:string,password:s
       ? `From: First Look <noreply@mail.firstlooklab.cn>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${body}\r\n--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${htmlBody}\r\n--${boundary}--\r\n.`
       : `From: First Look <noreply@mail.firstlooklab.cn>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${body}\r\n.`;
     const replyableMessage=message.replace("From: First Look <noreply@mail.firstlooklab.cn>",`From: First Look <${account.address}>`).replace("\r\nTo:","\r\nReply-To: First Look <server@firstlooklab.cn>\r\nTo:");
-    await cmd(replyableMessage.slice(0,-3).replace(/\r?\n/g,"\r\n").replace(/^\./gm,"..")+"\r\n.",[250]);
+    const messageIds=(value:string)=>value.match(/<[^<>\s\r\n]{1,200}>/g)?.slice(-10).join(" ")||"";
+    const parent=messageIds(thread?.messageId||"").split(" ").at(-1)||"";
+    const references=messageIds(`${thread?.references||""} ${parent}`).split(" ").join("\r\n ");
+    const threadedMessage=parent?replyableMessage.replace("\r\nTo:",`\r\nIn-Reply-To: ${parent}\r\nReferences: ${references}\r\nTo:`):replyableMessage;
+    await cmd(threadedMessage.slice(0,-3).replace(/\r?\n/g,"\r\n").replace(/^\./gm,"..")+"\r\n.",[250]);
     await cmd("QUIT",[221]);
   }finally{clearTimeout(timeout);w.releaseLock();r.releaseLock();await s.close();}
 }
 
 export async function sendAdminEmail(to:string,subject:string,body:string,password:string){
   await sendTextEmail(to,subject,`${body}\n\nFirst Look 一眼\n联系我们：server@firstlooklab.cn`,password,undefined,notificationAccount);
+}
+
+export async function sendInboxReply(to:string,subject:string,body:string,password:string,thread:{messageId:string;references:string}){
+  await sendTextEmail(to,subject,`${body}\n\nFirst Look 一眼\n联系我们：server@firstlooklab.cn`,password,undefined,notificationAccount,thread);
 }
 
 export async function sendVerificationEmail(to:string,code:string,password:string){
