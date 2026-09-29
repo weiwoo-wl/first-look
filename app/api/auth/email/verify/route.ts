@@ -38,13 +38,15 @@ export async function POST(request: Request) {
       await ensureWelcomeEmailTable(db);
       const claim = await db.prepare("INSERT OR IGNORE INTO welcome_emails(user_id,status) VALUES(?,'sending')").bind(userId).run();
       if (claim.meta.changes) {
-        const smtpPassword = runtime().SMTP_PASSWORD;
+        // Only the post-registration welcome email uses the enterprise mailbox.
+        // Verification codes remain on SMTP_PASSWORD in email/send/route.ts.
+        const smtpPassword = runtime().SERVER_SMTP_PASSWORD;
         if (smtpPassword) {
           await sendWelcomeEmail(email, smtpPassword);
           await db.prepare("UPDATE welcome_emails SET status='sent',sent_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=?").bind(userId).run();
         } else {
           await db.prepare("UPDATE welcome_emails SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE user_id=?").bind(userId).run();
-          console.warn("[auth] welcome email skipped: SMTP_PASSWORD is not configured");
+          console.warn("[auth] welcome email skipped: SERVER_SMTP_PASSWORD is not configured");
         }
       }
     } catch (error) {

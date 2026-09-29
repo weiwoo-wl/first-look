@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "请求来源无效" }, { status: 403 });
   const admin = await currentAdmin(request);
   if (!admin) return Response.json({ error: "只有管理员可以发送邮件" }, { status: 403 });
-  const { DB: db, SMTP_PASSWORD: password } = runtime();
+  const { DB: db, SERVER_SMTP_PASSWORD: password } = runtime();
   if (!db || !password) return Response.json({ error: "邮件服务暂不可用" }, { status: 503 });
   let input: { recipientIds?: unknown; subject?: unknown; body?: unknown; batchId?: unknown };
   try { input = await request.json(); } catch { return Response.json({ error: "邮件信息不正确" }, { status: 400 }); }

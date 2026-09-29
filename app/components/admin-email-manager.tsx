@@ -61,7 +61,7 @@ export default function AdminEmailManager({ users }: { users: User[] }) {
       </div>
       <div className="space-y-4"><label className="block text-sm font-medium">邮件主题<input value={subject} maxLength={160} disabled={sending} onChange={event=>{setSubject(event.target.value);draft.current=null;setInterrupted(false);}} className="mt-2 block w-full rounded-lg border border-black/15 px-3 py-2 font-normal" /></label>
         <label className="block text-sm font-medium">邮件正文<textarea value={body} maxLength={10000} rows={11} disabled={sending} onChange={event=>{setBody(event.target.value);draft.current=null;setInterrupted(false);}} className="mt-2 block w-full rounded-lg border border-black/15 px-3 py-2 font-normal" /></label>
-        <p className="text-xs text-black/50">发件人：First Look · noreply@mail.firstlooklab.cn<br />正文末尾会附上联系邮箱 server@firstlooklab.cn。</p>
+        <p className="text-xs text-black/50">发件人：First Look · server@firstlooklab.cn<br />用户可以直接回复，正文末尾会附上联系邮箱。</p>
         <button type="button" className="rounded-full bg-black px-5 py-3 text-sm text-white disabled:opacity-40" disabled={sending || !selected.length || !subject.trim() || !body.trim()} onClick={()=>void send()}>{sending?`正在发送（已提交 ${sent} 封）`:interrupted?"继续发送":"发送给选中的用户"}</button>
         {error&&<p role="alert" className="text-sm text-red-600">{error}</p>}
         {results.length>0&&<div role="status" className="rounded-lg border border-black/10 p-3"><p className="mb-2 text-sm font-medium">已提交 {sent} 封 / 共 {results.length} 封</p>{results.map(item=><p key={item.userId} className="break-all py-1 text-xs">{item.email} · {statusLabel[item.status]||item.status}</p>)}</div>}

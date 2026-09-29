@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   if (action === "backfill_welcome_emails") {
     if (admin.role !== "owner") return Response.json({ error: "只有所有者可以补发欢迎邮件" }, { status: 403 });
-    const smtpPassword = runtime().SMTP_PASSWORD;
+    const smtpPassword = runtime().SERVER_SMTP_PASSWORD;
     if (!smtpPassword) return Response.json({ error: "邮件服务尚未配置完成" }, { status: 503 });
     const batchId = crypto.randomUUID();
     await db.prepare("INSERT OR IGNORE INTO welcome_emails(user_id,status,batch_id) SELECT u.id,'sending',? FROM users u WHERE NOT EXISTS(SELECT 1 FROM welcome_emails w WHERE w.user_id=u.id) ORDER BY u.created_at ASC LIMIT 5").bind(batchId).run();
