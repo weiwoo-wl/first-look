@@ -8,7 +8,7 @@ import AnnouncementTicker from "./components/announcement-ticker";
 
 type Media = { object_key: string; media_type: string };
 type Product = { slug: string; title: string; description: string; type: string; status: string; creator_name: string; creator_handle?: string; product_url?: string; created_at: string; likes: number; favorites: number; shares: number; share_opens?: number; share_opens_7d?: number; share_opens_30d?: number; views: number; likes_7d?: number; likes_30d?: number; favorites_7d?: number; favorites_30d?: number; shares_7d?: number; shares_30d?: number; views_7d?: number; views_30d?: number; media: Media[]; coverUrl?: string; externalUrl?: string; sourceUrl?: string; sourceLabel?: string };
-const tabs = ["总排行", "近期人气", "最新"];
+const tabs = ["今日精选", "人气参考", "最新"];
 const types = ["全部", "工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
 const colors = ["#c9dbd1", "#efd6c4", "#d8d3ea", "#cadced", "#303b52", "#eadfb7"];
 const mediaSource = (media?: Media) => media ? `/api/media/file?key=${encodeURIComponent(media.object_key)}` : "";
@@ -80,7 +80,7 @@ function ProductBrowser({ products, activeTab }: { products: Product[]; activeTa
   if (!products.length) return <div className="product-browser-shell grid min-h-72 place-items-center px-6 text-center"><div><h2 className="text-xl font-semibold">这里还没有产品</h2><p className="mt-2 text-sm text-black/45">换一个分类或搜索词看看，也可以发布第一个。</p><a href="/create" className="mt-5 inline-flex rounded-full bg-black px-5 py-2.5 text-sm text-white">发布作品</a></div></div>;
   const slotCount = products.length;
   return <div className="product-browser-shell" onKeyDown={(event) => { if (event.key === "ArrowLeft") select(Math.max(active - 1, 0)); if (event.key === "ArrowRight") select(Math.min(active + 1, products.length - 1)); }}>
-    <div className="product-browser-top"><div><h2>发现产品</h2>{activeTab !== "近期人气" && <p>{activeTab === "总排行" ? "按累计喜欢、收藏、分享和有效传播访问排序；新品可在“最新”中发现。" : "左右滑动，看看大家正在创造什么。"}</p>}</div><div className="product-browser-controls"><button onClick={() => select(Math.max(active - 1, 0))} disabled={active <= 0 || !products.length} aria-label="上一个产品"><ArrowLeft /></button><span>{products.length ? `${active >= 0 ? active + 1 : "未选择"} / ${products.length}` : "等待产品"}</span><button onClick={() => select(Math.min(active + 1, products.length - 1))} disabled={!products.length || active === products.length - 1} aria-label="下一个产品"><ArrowRight /></button></div></div>
+    <div className="product-browser-top"><div><h2>发现产品</h2>{activeTab !== "人气参考" && <p>左右滑动，看看大家正在创造什么。</p>}</div><div className="product-browser-controls"><button onClick={() => select(Math.max(active - 1, 0))} disabled={active <= 0 || !products.length} aria-label="上一个产品"><ArrowLeft /></button><span>{products.length ? `${active >= 0 ? active + 1 : "未选择"} / ${products.length}` : "等待产品"}</span><button onClick={() => select(Math.min(active + 1, products.length - 1))} disabled={!products.length || active === products.length - 1} aria-label="下一个产品"><ArrowRight /></button></div></div>
     <div ref={trackRef} className="product-stack" onScroll={handleScroll} tabIndex={0} aria-label="产品展示">
       <div className="product-stack-spacer" aria-hidden="true" />
       {Array.from({ length: slotCount }, (_, index) => { const product = products[index]; return product ? <div key={product.slug} className={`product-stack-item ${index === active ? "is-active" : ""}`} style={{ zIndex: index === active ? slotCount + 2 : index + 1 }} onMouseEnter={() => setActive(index)} onMouseLeave={() => setActive((current) => current === index ? -1 : current)}><a ref={(node) => { itemRefs.current[index] = node; }} href={product.externalUrl || `/work/${encodeURIComponent(product.slug)}`} target={product.externalUrl ? "_blank" : undefined} rel={product.externalUrl ? "noreferrer" : undefined} className="product-stack-link" onClick={(event) => { if (index !== active) { event.preventDefault(); select(index); } }} aria-current={index === active ? "true" : undefined}><ProductCover product={product} active={index === active} color={colors[index % colors.length]} /></a>{index === active && <div className="product-card-detail" aria-live="polite"><span>{product.externalUrl ? `海外独立作品 · ${product.type}` : product.type}</span><h3>{product.title}</h3><p>{product.description}</p>{product.externalUrl ? <div className="product-external-links"><a href={product.externalUrl} target="_blank" rel="noreferrer">{product.sourceUrl === product.externalUrl ? "查看产品介绍 ↗" : "访问产品 ↗"}</a>{product.sourceUrl !== product.externalUrl && <a href={product.sourceUrl} target="_blank" rel="noreferrer">{product.sourceLabel || "Product Hunt 来源"}</a>}</div> : <><div className="mt-3 flex flex-col items-center gap-2">{product.product_url && <ProductEntryAction value={product.product_url} />}{product.creator_handle ? <a href={`/creator/${encodeURIComponent(product.creator_handle)}`}><small>{product.creator_name}</small></a> : <small>{product.creator_name}</small>}</div></>}</div>}</div> : <div key={`empty-${index}`} className="product-stack-item product-stack-empty-item" style={{ zIndex: index + 1 }}><EmptyProductSlot index={index} /></div>; })}
@@ -90,7 +90,7 @@ function ProductBrowser({ products, activeTab }: { products: Product[]; activeTa
 }
 
 export default function ProductBrowserHome() {
-  const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("总排行"), [activeType, setActiveType] = useState("全部");
+  const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("今日精选"), [activeType, setActiveType] = useState("全部");
   const [user, setUser] = useState<{ displayName: string } | null>(null), [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true), [loadError, setLoadError] = useState(false);
   const [logoReveal, setLogoReveal] = useState(0);
@@ -100,15 +100,19 @@ export default function ProductBrowserHome() {
   }, []);
   const visible = useMemo(() => {
     const filtered = products.filter((product) => (activeType === "全部" || product.type.includes(activeType)) && (!query || `${product.title} ${product.description} ${product.creator_name}`.toLowerCase().includes(query.toLowerCase())));
-    const hotScore = (product: Product) => productScore({ likes:product.likes_7d, favorites:product.favorites_7d, shares:product.shares_7d, share_opens:product.share_opens_7d });
+    const hotScore = (product: Product) => {
+      const recent = productScore({ likes:product.likes_7d, favorites:product.favorites_7d, shares:product.shares_7d, share_opens:product.share_opens_7d });
+      const month = productScore({ likes:product.likes_30d, favorites:product.favorites_30d, shares:product.shares_30d, share_opens:product.share_opens_30d });
+      return recent * 2 + Math.max(0, month - recent);
+    };
     const strengthScore = (product: Product) => productScore(product);
     const sorted = [...filtered].sort((a, b) => {
-      if (activeTab === "近期人气") return hotScore(b) - hotScore(a) || Date.parse(b.created_at) - Date.parse(a.created_at);
+      if (activeTab === "人气参考") return hotScore(b) - hotScore(a) || Date.parse(b.created_at) - Date.parse(a.created_at);
       if (activeTab === "最新") return Date.parse(b.created_at) - Date.parse(a.created_at);
       const aReady = a.status === "正在使用" ? 1 : 0, bReady = b.status === "正在使用" ? 1 : 0;
       return strengthScore(b) - strengthScore(a) || bReady - aReady || Date.parse(b.created_at) - Date.parse(a.created_at);
     });
-    if (activeTab === "总排行") {
+    if (activeTab === "今日精选") {
       return activeType === "全部" && !query.trim() ? [...sorted, ...todayIndependentProducts, ...independentProducts] : sorted;
     }
     return sorted;
