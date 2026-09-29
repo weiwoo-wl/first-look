@@ -24,7 +24,7 @@ export async function sendAdminEmail(to:string,subject:string,body:string,passwo
 }
 
 export async function sendVerificationEmail(to:string,code:string,password:string){
-  await sendTextEmail(to,"First Look 验证码",`你的 First Look 验证码是：${code}\n\n验证码 10 分钟内有效。若不是你本人操作，请忽略。`,password);
+  await sendTextEmail(to,"First Look 验证码",`你的 First Look 验证码是：${code}\n\n验证码 10 分钟内有效。\n\n请将 noreply@mail.firstlooklab.cn 加入邮箱通讯录或白名单，避免后续邮件被拦截。如果没收到邮件，请检查垃圾邮件文件夹。\n\n若不是你本人操作，请忽略。`,password);
 }
 
 export async function sendWelcomeEmail(to:string,password:string){
