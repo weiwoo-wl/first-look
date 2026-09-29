@@ -4,6 +4,7 @@ const enc=new TextEncoder(),dec=new TextDecoder();
 async function reply(r:ReadableStreamDefaultReader<Uint8Array>){let t="";for(;;){const x=await r.read();if(x.done)throw Error("SMTP closed");t+=dec.decode(x.value,{stream:true});const last=t.split("\r\n").filter(Boolean).at(-1);if(last&&/^\d{3} /.test(last))return Number(last.slice(0,3));}}
 async function sendTextEmail(to:string,subjectText:string,body:string,password:string,htmlBody?:string){
   const s=connect({hostname:"smtpdm.aliyun.com",port:465},{secureTransport:"on"}),w=s.writable.getWriter(),r=s.readable.getReader();
+  const timeout=setTimeout(()=>{void s.close().catch(()=>{});},20000);
   const cmd=async(line:string,accepted:number[])=>{await w.write(enc.encode(line+"\r\n"));const code=await reply(r);if(!accepted.includes(code))throw Error(`SMTP ${code}`);};
   try{
     if(await reply(r)!==220)throw Error("SMTP greeting");
@@ -13,9 +14,13 @@ async function sendTextEmail(to:string,subjectText:string,body:string,password:s
     const message=htmlBody
       ? `From: First Look <noreply@mail.firstlooklab.cn>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${body}\r\n--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${htmlBody}\r\n--${boundary}--\r\n.`
       : `From: First Look <noreply@mail.firstlooklab.cn>\r\nTo: <${to}>\r\nSubject: ${subject}\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${body}\r\n.`;
-    await cmd(message,[250]);
+    await cmd(message.slice(0,-3).replace(/\r?\n/g,"\r\n").replace(/^\./gm,"..")+"\r\n.",[250]);
     await cmd("QUIT",[221]);
-  }finally{w.releaseLock();r.releaseLock();await s.close();}
+  }finally{clearTimeout(timeout);w.releaseLock();r.releaseLock();await s.close();}
+}
+
+export async function sendAdminEmail(to:string,subject:string,body:string,password:string){
+  await sendTextEmail(to,subject,`${body}\n\nFirst Look 一眼\n联系我们：server@firstlooklab.cn`,password);
 }
 
 export async function sendVerificationEmail(to:string,code:string,password:string){

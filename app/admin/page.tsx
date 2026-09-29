@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import AnnouncementManager from "../components/announcement-manager";
+import AdminEmailManager from "../components/admin-email-manager";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Box, Check, CircleAlert, LayoutDashboard, Search, Shield, Users } from "lucide-react";
+import { ArrowLeft, Box, Check, CircleAlert, LayoutDashboard, Mail, Search, Shield, Users } from "lucide-react";
 
-type Tab = "overview" | "products" | "users" | "reports" | "announcements";
+type Tab = "overview" | "products" | "users" | "reports" | "announcements" | "emails";
 type AdminData = {
   me: { id:string; email:string; displayName:string; role:"owner"|"admin" };
   counts: { users_total:number; products_total:number; published_total:number; reports_pending:number; welcome_pending:number; welcome_failed:number };
@@ -16,7 +17,7 @@ type AdminData = {
 };
 
 const labels: Record<string,string> = { published:"已公开",private:"仅自己可见",unpublished:"已下架",draft:"草稿",private_pending:"等待上传",admin_hidden:"审核中",hide_creation:"隐藏产品",restore_creation:"恢复产品",disable_user:"禁用用户",enable_user:"恢复用户",grant_admin:"设为管理员",revoke_admin:"移除管理员",resolve_report:"确认违规",restore_report:"恢复产品",backfill_welcome_emails:"补发欢迎邮件" };
-const tabs: Array<{id:Tab;label:string;icon:typeof LayoutDashboard}> = [{id:"overview",label:"概览",icon:LayoutDashboard},{id:"products",label:"产品管理",icon:Box},{id:"users",label:"用户管理",icon:Users},{id:"reports",label:"举报处理",icon:CircleAlert},{id:"announcements",label:"公告管理",icon:CircleAlert}];
+const tabs: Array<{id:Tab;label:string;icon:typeof LayoutDashboard}> = [{id:"overview",label:"概览",icon:LayoutDashboard},{id:"products",label:"产品管理",icon:Box},{id:"users",label:"用户管理",icon:Users},{id:"emails",label:"发送邮件",icon:Mail},{id:"reports",label:"举报处理",icon:CircleAlert},{id:"announcements",label:"公告管理",icon:CircleAlert}];
 const formatDate=(value:string)=>value?new Date(value.replace(" ","T")+(value.includes("Z")?"":"Z")).toLocaleDateString("zh-CN"):"-";
 
 export default function AdminPage(){
@@ -33,5 +34,6 @@ export default function AdminPage(){
   {tab==="products"&&<section className="admin-panel"><div className="admin-panel-title"><h2>产品列表</h2><span>{products.length} 个</span></div>{products.length?<div className="admin-table-wrap"><table><thead><tr><th>产品</th><th>创作者</th><th>状态</th><th>发布时间</th><th>操作</th></tr></thead><tbody>{products.map(item=><tr key={item.id}><td><b>{item.title}</b><small>{item.type}</small></td><td>{item.creator_name}</td><td><span className={`admin-status ${item.admin_hidden?"warning":""}`}>{labels[item.visibility]||item.visibility}</span></td><td>{formatDate(item.created_at)}</td><td>{item.admin_hidden?<button disabled={busy===`restore_creation:${item.id}`} onClick={()=>act("restore_creation",item.id)}>恢复</button>:!["draft","private_pending","finalizing","deleting"].includes(item.visibility)&&<button disabled={busy===`hide_creation:${item.id}`} onClick={()=>act("hide_creation",item.id)} className="danger">隐藏</button>}</td></tr>)}</tbody></table></div>:<div className="admin-empty">没有找到相关产品。</div>}</section>}
   {tab==="users"&&<section className="admin-panel"><div className="admin-panel-title"><h2>用户列表</h2><span>{users.length} 人</span></div>{data.me.role==="owner"&&<div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[.08] px-5 py-4"><div><p className="text-sm font-medium">欢迎邮件补发</p><p className="mt-1 text-xs text-black/50">尚未处理 {data.counts.welcome_pending} 人 · 发送失败 {data.counts.welcome_failed} 人</p></div><button type="button" className="admin-back" disabled={busy==="welcome-backfill"||data.counts.welcome_pending===0} onClick={()=>void backfillWelcomeEmails()}>{busy==="welcome-backfill"?"正在发送…":"一次性补发"}</button></div>}{users.length?<div className="admin-table-wrap"><table><thead><tr><th>用户</th><th>注册时间</th><th>身份</th><th>账号状态</th><th>操作</th></tr></thead><tbody>{users.map(item=><tr key={item.id}><td><b>{item.display_name}</b><small>{item.email}</small></td><td>{formatDate(item.created_at)}</td><td>{item.admin_role==="owner"?"所有者":item.admin_role==="admin"?"管理员":"用户"}</td><td><span className={`admin-status ${item.disabled_at?"warning":""}`}>{item.disabled_at?"已禁用":"正常"}</span></td><td><div className="admin-row-actions">{item.id!==data.me.id&&(item.disabled_at?<button onClick={()=>act("enable_user",item.id)}>恢复</button>:<button className="danger" onClick={()=>act("disable_user",item.id)}>禁用</button>)}{data.me.role==="owner"&&item.id!==data.me.id&&!item.disabled_at&&(item.admin_role==="admin"?<button onClick={()=>act("revoke_admin",item.id)}>移除管理员</button>:!item.admin_role&&<button onClick={()=>act("grant_admin",item.id)}>设为管理员</button>)}</div></td></tr>)}</tbody></table></div>:<div className="admin-empty">没有找到相关用户。</div>}</section>}
   {tab==="announcements"&&<AnnouncementManager />}
+  {tab==="emails"&&<AdminEmailManager users={data.users} />}
   {tab==="reports"&&<section className="admin-panel"><div className="admin-panel-title"><h2>举报记录</h2><span>{data.reports.length} 条</span></div>{data.reports.length?<div className="admin-report-list">{data.reports.map(item=><article key={item.id}><div><span>{item.status==="pending"?"待处理":"已处理"}</span><h3>{item.reason}</h3><p>对象：{item.target_type} {item.target_id}　举报人：{item.reporter_name||"匿名"}</p></div><time>{formatDate(item.created_at)}</time>{item.status==="pending"&&<div className="admin-row-actions"><button onClick={()=>act("restore_report",item.id)}>恢复产品</button><button className="danger" onClick={()=>act("resolve_report",item.id)}><Check size={15}/>确认违规</button></div>}</article>)}</div>:<div className="admin-empty"><Shield size={30}/><p>目前没有举报记录。</p></div>}</section>}
   </section></main>}
