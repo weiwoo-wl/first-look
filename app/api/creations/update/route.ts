@@ -6,7 +6,7 @@ import type { UploadReservation } from "../../../lib/storage-quota";
 
 type MediaUpload = { key: string; uploadId: string; parts: R2UploadedPart[] };
 type MediaChoice = { kind: "existing" | "upload"; key: string; role?: "mini-program-qr" };
-const productTypes = ["工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "文本", "实验", "其他"];
+const productTypes = ["工具", "小程序", "APP", "网页", "视频", "数字人", "Skill", "图片", "音频", "文本", "实验", "其他"];
 const productStatuses = ["正在使用", "早期测试", "概念阶段"];
 const placeholders = (values: string[]) => values.map(() => "?").join(",");
 

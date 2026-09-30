@@ -8,7 +8,7 @@ import ProductEntryAction from "./components/product-entry-action";
 type Media = { object_key: string; media_type: string };
 type Product = { slug: string; title: string; description: string; type: string; status: string; creator_name: string; creator_handle?: string; product_url?: string; created_at: string; likes: number; favorites: number; shares: number; share_opens?: number; share_opens_7d?: number; share_opens_30d?: number; views: number; likes_7d?: number; likes_30d?: number; favorites_7d?: number; favorites_30d?: number; shares_7d?: number; shares_30d?: number; views_7d?: number; views_30d?: number; likes_yesterday?: number; favorites_yesterday?: number; shares_yesterday?: number; share_opens_yesterday?: number; views_yesterday?: number; media: Media[]; coverUrl?: string; externalUrl?: string; sourceUrl?: string; sourceLabel?: string };
 const tabs = ["发现作品", "今日精选", "人气参考", "最新", "海外新作"];
-const types = ["全部", "工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
+const types = ["全部", "工具", "小程序", "APP", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
 const colors = ["#c9dbd1", "#efd6c4", "#d8d3ea", "#cadced", "#303b52", "#eadfb7"];
 const mediaSource = (media?: Media) => media ? `/api/media/file?key=${encodeURIComponent(media.object_key)}` : "";
 const todayIndependentProducts: Product[] = [

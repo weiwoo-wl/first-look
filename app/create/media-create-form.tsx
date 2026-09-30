@@ -5,7 +5,7 @@ import EntryCheck from "../components/entry-check";
 import type { TechnicalLink } from "../lib/technical";
 import Link from "next/link";import{FormEvent,useEffect,useState}from"react";import{ArrowLeft,Upload,X}from"lucide-react";
 async function readJson<T>(response:Response){const text=await response.text();if(!text)return{}as T;try{return JSON.parse(text)as T}catch{return{}as T}}
-const types=["工具","小程序","网页","视频","数字人","Skill","图片","音频","文本","实验","其他"],statuses=["正在使用","早期测试","概念阶段"];
+const types=["工具","小程序","APP","网页","视频","数字人","Skill","图片","音频","文本","实验","其他"],statuses=["正在使用","早期测试","概念阶段"];
 export default function MediaCreateForm() {
   const [storage, setStorage] = useState<StorageQuota | null>(null);
   async function refreshStorage() {

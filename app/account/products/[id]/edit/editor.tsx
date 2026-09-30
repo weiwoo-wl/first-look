@@ -12,7 +12,7 @@ type MediaRow = { object_key: string; media_type: string; mime_type: string; siz
 type TechFile = { object_key: string; name: string; size: number };
 type EditorMedia = ({ kind: "existing" } & MediaRow) | { kind: "new"; file: File; preview: string; uploadKey?: string; uploadId?: string; parts?: R2UploadedPart[] };
 type EditorFile = ({ kind: "existing" } & TechFile) | { kind: "new"; file: File; uploadKey?: string };
-const types = ["工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "文本", "实验", "其他"];
+const types = ["工具", "小程序", "APP", "网页", "视频", "数字人", "Skill", "图片", "音频", "文本", "实验", "其他"];
 const statuses = ["正在使用", "早期测试", "概念阶段"];
 const input = "mt-2 w-full rounded-lg border border-black/15 bg-white px-4 py-3 text-sm outline-none focus:border-black/55";
 
