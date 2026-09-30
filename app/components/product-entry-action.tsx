@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { isWebResourceLink, resourceLinkTitle } from "../lib/technical";
+import { extractSharedUrl, isWebResourceLink, resourceLinkTitle } from "../lib/technical";
 
-export default function ProductEntryAction({ value, className = "" }: { value: string; className?: string }) {
+export default function ProductEntryAction({ value, type = "", className = "" }: { value: string; type?: string; className?: string }) {
   const [copied, setCopied] = useState(false);
-  const isLink = isWebResourceLink(value);
-  const isMiniProgram = value.trim().startsWith("#小程序://");
+  const sharedUrl = extractSharedUrl(value);
+  const isLink = isWebResourceLink(value) || Boolean(sharedUrl);
+  const target = sharedUrl || value;
+  const isMiniProgram = type === "小程序" || value.includes("#小程序://");
 
   async function copyEntry() {
     try {
@@ -18,11 +20,11 @@ export default function ProductEntryAction({ value, className = "" }: { value: s
     }
   }
 
-  const label = isLink ? "打开产品 ↗" : isMiniProgram ? "复制小程序口令" : "复制产品入口";
+  const label = isLink ? "打开产品" : isMiniProgram ? "复制小程序分享内容" : "复制产品入口";
   const style = `inline-flex w-fit items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-medium text-white transition hover:bg-black/75 ${className}`;
 
   return isLink ? (
-    <a href={value} target={/^https?:\/\//i.test(value) ? "_blank" : undefined} rel={/^https?:\/\//i.test(value) ? "noreferrer" : undefined} className={style} onClick={(event) => event.stopPropagation()}>
+    <a href={target} target={/^https?:\/\//i.test(target) ? "_blank" : undefined} rel={/^https?:\/\//i.test(target) ? "noreferrer" : undefined} className={style} onClick={(event) => event.stopPropagation()}>
       {label}
     </a>
   ) : (
@@ -30,7 +32,7 @@ export default function ProductEntryAction({ value, className = "" }: { value: s
       <button type="button" className={style} onClick={(event) => { event.stopPropagation(); void copyEntry(); }}>
         {copied ? "已复制" : label}
       </button>
-      <span className="text-[11px] text-black/40">{copied ? "可前往对应平台打开" : isMiniProgram ? "复制后在微信中打开" : `复制后在${resourceLinkTitle(value)}中打开`}</span>
+      <span className="text-[11px] text-black/40">{copied ? (isMiniProgram ? "可前往微信打开" : "已复制") : isLink ? "分享内容中包含可打开的网址" : isMiniProgram ? "复制后到微信中打开" : `复制后在${resourceLinkTitle(value)}中打开`}</span>
     </div>
   );
 }

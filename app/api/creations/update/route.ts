@@ -1,11 +1,11 @@
 import { currentUser, runtime, sameOrigin } from "../../../lib/auth";
 import { ensureCreationTables, parseTags } from "../../../lib/creations";
-import { normalizeResourceValue, normalizeTechnical, readTechnical, type TechnicalFile, type TechnicalLink } from "../../../lib/technical";
+import { normalizeProductEntry, normalizeTechnical, readTechnical, type TechnicalFile, type TechnicalLink } from "../../../lib/technical";
 import { UPLOAD_LIMITS } from "../../../lib/upload-limits";
 import type { UploadReservation } from "../../../lib/storage-quota";
 
 type MediaUpload = { key: string; uploadId: string; parts: R2UploadedPart[] };
-type MediaChoice = { kind: "existing" | "upload"; key: string };
+type MediaChoice = { kind: "existing" | "upload"; key: string; role?: "mini-program-qr" };
 const productTypes = ["工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "文本", "实验", "其他"];
 const productStatuses = ["正在使用", "早期测试", "概念阶段"];
 const placeholders = (values: string[]) => values.map(() => "?").join(",");
@@ -38,7 +38,8 @@ export async function PATCH(request: Request) {
   if (!Number.isSafeInteger(id) || id <= 0 || !body.expectedUpdatedAt || !Array.isArray(body.media) || !Array.isArray(body.mediaUploads) || !Array.isArray(body.technicalFileKeys)) return Response.json({ error: "编辑信息不完整，请刷新后重试" }, { status: 400 });
   const title = String(body.title || "").trim(), description = String(body.description || "").trim();
   const type = String(body.type || ""), status = String(body.status || "");
-  const story = String(body.story || "").trim(), tags = parseTags(body.tags), productUrl = String(body.productUrl || "").trim();
+  const story = String(body.story || "").trim(), tags = parseTags(body.tags);
+  let productUrl = "";
   const tagItems = String(body.tags || "").split(/[，,\n]/).map((tag) => tag.trim()).filter(Boolean);
   const changeNote = String(body.changeNote || "").trim().slice(0, 240);
   if (title.length < 2 || title.length > 80) return Response.json({ error: "作品名称需要为 2 到 80 个字" }, { status: 400 });
@@ -46,11 +47,13 @@ export async function PATCH(request: Request) {
   if (!productTypes.includes(type) || !productStatuses.includes(status)) return Response.json({ error: "请选择有效的作品类型和当前状态" }, { status: 400 });
   if (story.length > 2000) return Response.json({ error: "创作故事不能超过 2000 个字" }, { status: 400 });
   if (tagItems.length > 8 || tagItems.some((tag) => tag.length > 40)) return Response.json({ error: "标签最多 8 个，每个不超过 40 个字" }, { status: 400 });
-  if (productUrl) { try { normalizeResourceValue(productUrl); } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "产品入口格式不正确" }, { status: 400 }); } }
-  if (body.media.length > 8 || body.mediaUploads.length > 8 || body.technicalFileKeys.length > 5) return Response.json({ error: "最多添加 8 个图片或视频、5 份资料文件" }, { status: 400 });
-  if (body.media.some((item) => !item || !["existing", "upload"].includes(item.kind) || typeof item.key !== "string") || new Set(body.media.map((item) => item.key)).size !== body.media.length || new Set(body.technicalFileKeys).size !== body.technicalFileKeys.length) return Response.json({ error: "媒体或资料清单不正确" }, { status: 400 });
+  try { productUrl = normalizeProductEntry(String(body.productUrl || ""), type); } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "产品入口格式不正确" }, { status: 400 }); }
+  if (body.media.length > 8 || body.mediaUploads.length > 8 || body.technicalFileKeys.length > 5) return Response.json({ error: "最多添加 8 个图片、视频和小程序码，以及 5 份资料文件" }, { status: 400 });
+  if (body.media.some((item) => !item || !["existing", "upload"].includes(item.kind) || typeof item.key !== "string" || (item.role !== undefined && item.role !== "mini-program-qr")) || body.media.filter((item) => item.role === "mini-program-qr").length > 1 || new Set(body.media.map((item) => item.key)).size !== body.media.length || new Set(body.technicalFileKeys).size !== body.technicalFileKeys.length) return Response.json({ error: "媒体或资料清单不正确" }, { status: 400 });
   let technical: { notes: string; links: TechnicalLink[] };
   try { technical = normalizeTechnical(body.technical); } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "技术分享格式不正确" }, { status: 400 }); }
+  if (type === "小程序" && !productUrl) return Response.json({ error: "请粘贴微信中的小程序分享内容" }, { status: 400 });
+  if (type !== "小程序") technical.miniProgram = { name: "", originalId: "", entryVerified: false };
 
   await ensureCreationTables(db);
   const product = await db.prepare("SELECT id,creator_id,title,description,type,status,story,tags,product_url,visibility,updated_at,edit_lock_until FROM creations WHERE id=? AND creator_id=?").bind(id, user.id).first<Record<string, unknown>>();
@@ -79,14 +82,22 @@ export async function PATCH(request: Request) {
   const stagedTechByKey = new Map(stagedTech.results.map((item) => [item.object_key, item]));
   if (neededTechKeys.some((key) => { const row = stagedTechByKey.get(key); return !row || row.state !== "reserved" || row.expires_at <= Date.now(); })) return Response.json({ error: "新上传的资料已过期，请重新选择" }, { status: 409 });
 
-  const mediaRows = body.media.map((item, sort_order) => {
+  let galleryOrder = 0;
+  const mediaRows = body.media.map((item) => {
     const existing = currentMediaByKey.get(item.key), uploaded = newMediaByKey.get(item.key);
-    return existing ? { ...existing, sort_order } : { object_key: item.key, media_type: uploaded!.mime.startsWith("video/") ? "video" : "image", mime_type: uploaded!.mime, size: uploaded!.size, sort_order };
-  });
+    const sort_order = item.role === "mini-program-qr" ? -1 : galleryOrder++;
+    const row = existing ? { ...existing, sort_order } : { object_key: item.key, media_type: uploaded!.mime.startsWith("video/") ? "video" : "image", mime_type: uploaded!.mime, size: uploaded!.size, sort_order };
+    if (sort_order === -1 && row.media_type !== "image") throw Error("小程序码必须是图片");
+    return row;
+  }).sort((a, b) => a.sort_order - b.sort_order);
   const techFiles = body.technicalFileKeys.map((key) => currentFiles.get(key) || stagedTechByKey.get(key)!);
   if (mediaRows.reduce((sum, item) => sum + item.size, 0) + techFiles.reduce((sum, item) => sum + item.size, 0) > UPLOAD_LIMITS.product) return Response.json({ error: "当前产品全部图片、视频和资料合计不能超过 100MB" }, { status: 413 });
 
-  const nextTech = { notes: technical.notes, links: technical.links, files: techFiles };
+  const qrKey = mediaRows.find((item) => item.sort_order === -1)?.object_key || "";
+  const currentQrKey = currentMedia.results.find((item) => item.sort_order === -1)?.object_key || "";
+  const entryChanged = String(product.product_url || "") !== productUrl || String(product.type) !== type || currentTechnical.miniProgram?.name !== technical.miniProgram.name || currentTechnical.miniProgram?.originalId !== technical.miniProgram.originalId || currentQrKey !== qrKey;
+  const nextMiniProgram = { ...technical.miniProgram, entryVerified: entryChanged ? false : technical.miniProgram.entryVerified };
+  const nextTech = { notes: technical.notes, links: technical.links, files: techFiles, miniProgram: nextMiniProgram };
   const currentData = { title: String(product.title), description: String(product.description), type: String(product.type), status: String(product.status), story: String(product.story || ""), tags: String(product.tags || ""), product_url: String(product.product_url || "") };
   const nextData = { title, description, type, status, story, tags, product_url: productUrl };
   const versionNote = changeNote || (currentData.product_url !== nextData.product_url
@@ -96,7 +107,7 @@ export async function PATCH(request: Request) {
     : "补充或更新产品内容");
   const sameMedia = currentMedia.results.length === mediaRows.length && currentMedia.results.every((item, index) => item.object_key === mediaRows[index].object_key);
   const sameTechFiles = currentTechnical.files.length === techFiles.length && currentTechnical.files.every((item, index) => item.object_key === techFiles[index].object_key);
-  const sameTech = currentTechnical.notes === technical.notes && JSON.stringify(currentTechnical.links) === JSON.stringify(technical.links) && sameTechFiles;
+  const sameTech = currentTechnical.notes === technical.notes && JSON.stringify(currentTechnical.links) === JSON.stringify(technical.links) && currentTechnical.miniProgram?.name === nextMiniProgram.name && currentTechnical.miniProgram?.originalId === nextMiniProgram.originalId && Boolean(currentTechnical.miniProgram?.entryVerified) === nextMiniProgram.entryVerified && sameTechFiles;
   const noChanges = Object.keys(currentData).every((key) => currentData[key as keyof typeof currentData] === nextData[key as keyof typeof nextData]) && sameMedia && sameTech && body.mediaUploads.length === 0 && neededTechKeys.length === 0;
   if (noChanges) return Response.json({ ok: true, unchanged: true, version: null });
 
@@ -139,7 +150,7 @@ export async function PATCH(request: Request) {
       db.prepare("UPDATE creations SET title=?,description=?,type=?,status=?,story=?,tags=?,product_url=?,updated_at=?,edit_lock_until=0 WHERE id=? AND creator_id=? AND edit_lock_until=?").bind(title, description, type, status, story, tags, productUrl, timestamp, id, user.id, lockUntil),
       db.prepare("DELETE FROM creation_media WHERE creation_id=?").bind(id),
       ...mediaRows.map((item) => db.prepare("INSERT INTO creation_media(creation_id,object_key,media_type,mime_type,size,sort_order) VALUES(?,?,?,?,?,?)").bind(id, item.object_key, item.media_type, item.mime_type, item.size, item.sort_order)),
-      db.prepare("INSERT INTO creation_technical(creation_id,notes,links_json) VALUES(?,?,?) ON CONFLICT(creation_id) DO UPDATE SET notes=excluded.notes,links_json=excluded.links_json").bind(id, technical.notes, JSON.stringify(technical.links)),
+      db.prepare("INSERT INTO creation_technical(creation_id,notes,links_json) VALUES(?,?,?) ON CONFLICT(creation_id) DO UPDATE SET notes=excluded.notes,links_json=excluded.links_json").bind(id, technical.notes, JSON.stringify({ links: technical.links, miniProgram: nextMiniProgram })),
       db.prepare("DELETE FROM creation_technical_files WHERE creation_id=?").bind(id),
       ...techFiles.map((item) => db.prepare("INSERT INTO creation_technical_files(object_key,creation_id,name,size) VALUES(?,?,?,?)").bind(item.object_key, id, item.name, item.size)),
       ...[...newMediaRows.results.map((item) => item.object_key), ...stagedTech.results.map((item) => item.object_key)].map((key) => db.prepare("UPDATE storage_objects SET state='stored',expires_at=0 WHERE object_key=? AND owner_id=? AND creation_id=? AND state='reserved'").bind(key, user.id, id)),

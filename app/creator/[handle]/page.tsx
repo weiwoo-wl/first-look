@@ -167,7 +167,7 @@ export default function CreatorPublicPage() {
                   </div>
                   <p className="mt-3 text-xs text-black/35">{product.type} · {product.likes} 喜欢 · {product.views} 浏览</p>
                 </Link>
-                {product.product_url && <div className="mt-3"><ProductEntryAction value={product.product_url} /></div>}
+                {product.product_url && <div className="mt-3"><ProductEntryAction value={product.product_url} type={product.type} /></div>}
                 </div>
               );
             })}

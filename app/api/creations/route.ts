@@ -1,5 +1,5 @@
 import { engagementColumns, engagementPeriodColumns, engagementYesterdayColumns } from "../../lib/engagement";
-import { normalizeResourceValue, normalizeTechnical, readTechnical } from "../../lib/technical";
+import { normalizeProductEntry, normalizeTechnical, readTechnical } from "../../lib/technical";
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { creations } from "../../../db/schema";
@@ -16,11 +16,14 @@ export async function GET(request: Request) {
   if (slug) {
     const work = await db.prepare("SELECT c.id,c.slug,c.title,c.description,c.type,c.status,c.story,c.tags,c.product_url,c.creator_name,u.handle AS creator_handle,c.created_at,c.updated_at,CASE WHEN u.contact_enabled=1 THEN u.email ELSE NULL END AS contact_email FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.slug=? AND c.visibility='published'").bind(slug).first<Record<string,unknown>>();
     if (!work) return Response.json({ error: "作品不存在" }, { status: 404 });
-    const media = await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]);
-    return Response.json({ ...work, media, technical: await readTechnical(db,Number(work.id)) });
+    const mediaRows = await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]);
+    const qrObjectKey = mediaRows.find((item) => item.sort_order === -1)?.object_key || "";
+    const media = mediaRows.filter((item) => item.sort_order !== -1);
+    const technical = await readTechnical(db,Number(work.id));
+    return Response.json({ ...work, media, technical: { ...technical, miniProgram: { name: technical.miniProgram?.name || "", originalId: technical.miniProgram?.originalId || "", qrObjectKey } } });
   }
   const rows = await db.prepare(`SELECT c.id,c.slug,c.title,c.description,c.type,c.status,c.tags,c.product_url,c.creator_name,u.handle AS creator_handle,c.created_at,c.updated_at,${engagementColumns()},${engagementPeriodColumns(7)},${engagementPeriodColumns(30)},${engagementYesterdayColumns()} FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.visibility=\'published\' ORDER BY c.created_at DESC`).all();
-  const enriched = await Promise.all(rows.results.map(async (work) => ({ ...work, media: await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]) })));
+  const enriched = await Promise.all(rows.results.map(async (work) => ({ ...work, media: (await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[])).filter((item) => item.sort_order !== -1) })));
   return Response.json(enriched, { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -37,12 +40,14 @@ async function postCreation(request: Request) {
   if (description.length < 10 || description.length > 500) return Response.json({ error: "一句话介绍需要为 10 到 500 个字" }, { status: 400 });
   if (body.story && body.story.trim().length > 2000) return Response.json({ error: "创作故事不能超过 2000 个字" }, { status: 400 });
   let productUrl = "";
-  try { if (body.productUrl?.trim()) productUrl = normalizeResourceValue(body.productUrl); }
+  try { productUrl = normalizeProductEntry(body.productUrl || "", type); }
   catch (error) { return Response.json({ error: error instanceof Error ? error.message : "产品入口格式不正确" }, { status: 400 }); }
 
   let technical;
   try { technical = normalizeTechnical(body.technical); }
   catch (error) { return Response.json({error: error instanceof Error ? error.message : "技术分享格式不正确"},{status:400}); }
+  if (type === "小程序" && !productUrl) return Response.json({ error: "请粘贴微信中的小程序分享内容" }, { status: 400 });
+  if (type !== "小程序") technical.miniProgram = { name: "", originalId: "", entryVerified: false };
   if (body.attachmentCount !== undefined && (!Number.isInteger(body.attachmentCount) || body.attachmentCount < 0 || body.attachmentCount > 5)) return Response.json({error:"技术资料最多 5 个"},{status:400});
   const pending = Boolean(body.mediaCount || body.attachmentCount);
   const existing = await db.select({ id: creations.id }).from(creations).where(eq(creations.title, title)).limit(1);
@@ -55,7 +60,7 @@ async function postCreation(request: Request) {
     creatorName: user.displayName, contactEmailVisible: 0,
     visibility: pending ? (body.visibility === "private" ? "private_pending" : "draft") : (body.visibility === "private" ? "private" : "published"),
   }).returning();
-  await runtime().DB!.prepare("INSERT INTO creation_technical(creation_id,notes,links_json) VALUES(?,?,?)").bind(creation.id,technical.notes,JSON.stringify(technical.links)).run();
+  await runtime().DB!.prepare("INSERT INTO creation_technical(creation_id,notes,links_json) VALUES(?,?,?)").bind(creation.id,technical.notes,JSON.stringify({ links: technical.links, miniProgram: technical.miniProgram })).run();
   if (!pending) await createCreationVersion(runtime().DB!, creation.id, user.id, body.changeNote || "首次发布");
   return Response.json(creation, { status: 201 });
 }

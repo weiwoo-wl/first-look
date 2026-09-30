@@ -8,8 +8,8 @@ export async function POST(request:Request) {
   const user=await currentUser(request),{DB:db,MEDIA:bucket}=runtime();
   if(!user)return Response.json({error:"请先登录"},{status:401});
   if(!db||!bucket)return Response.json({error:"媒体存储尚未配置"},{status:503});
-  const body=await request.json() as {creationId:number;uploads:Upload[]};
-  if(!Number.isSafeInteger(body.creationId)||!Array.isArray(body.uploads)||body.uploads.length>8||body.uploads.some(x=>!x||typeof x.key!=="string")||new Set(body.uploads.map(x=>x.key)).size!==body.uploads.length)return Response.json({error:"媒体数量或信息不正确"},{status:400});
+  const body=await request.json() as {creationId:number;uploads:Upload[];miniProgramQrKey?:string};
+  if(!Number.isSafeInteger(body.creationId)||!Array.isArray(body.uploads)||body.uploads.length>8||body.uploads.some(x=>!x||typeof x.key!=="string")||new Set(body.uploads.map(x=>x.key)).size!==body.uploads.length||Boolean(body.miniProgramQrKey)&&!body.uploads.some(x=>x.key===body.miniProgramQrKey))return Response.json({error:"媒体数量或信息不正确"},{status:400});
   await ensureStorage(db);
   const product=await db.prepare("SELECT visibility FROM creations WHERE id=? AND creator_id=? AND visibility IN ('draft','private_pending')").bind(body.creationId,user.id).first<{visibility:string}>();
   if(!product)return Response.json({error:"已发布产品不能修改"},{status:409});
@@ -38,7 +38,7 @@ export async function POST(request:Request) {
         await db.prepare("UPDATE storage_objects SET state='stored',expires_at=0 WHERE object_key=?").bind(upload.key).run();
       }
     }
-    const statements=body.uploads.map((upload,index)=>{const row=rows.get(upload.key)!;return db.prepare("INSERT OR IGNORE INTO creation_media(creation_id,object_key,media_type,mime_type,size,sort_order) VALUES(?,?,?,?,?,?)").bind(body.creationId,upload.key,row.mime.startsWith("video/")?"video":"image",row.mime,row.size,index);});
+    const statements=body.uploads.map((upload,index)=>{const row=rows.get(upload.key)!;if(upload.key===body.miniProgramQrKey&&!row.mime.startsWith("image/"))throw Error("小程序码必须是图片");return db.prepare("INSERT OR IGNORE INTO creation_media(creation_id,object_key,media_type,mime_type,size,sort_order) VALUES(?,?,?,?,?,?)").bind(body.creationId,upload.key,row.mime.startsWith("video/")?"video":"image",row.mime,row.size,upload.key===body.miniProgramQrKey?-1:index);});
     if(statements.length)await db.batch(statements);
     await createCreationVersion(db,body.creationId,user.id,"首次发布");
     await db.prepare("UPDATE creations SET visibility=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND creator_id=? AND visibility='finalizing'").bind(visibility,body.creationId,user.id).run();
