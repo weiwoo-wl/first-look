@@ -8,7 +8,7 @@ import AnnouncementTicker from "./components/announcement-ticker";
 
 type Media = { object_key: string; media_type: string };
 type Product = { slug: string; title: string; description: string; type: string; status: string; creator_name: string; creator_handle?: string; product_url?: string; created_at: string; likes: number; favorites: number; shares: number; share_opens?: number; share_opens_7d?: number; share_opens_30d?: number; views: number; likes_7d?: number; likes_30d?: number; favorites_7d?: number; favorites_30d?: number; shares_7d?: number; shares_30d?: number; views_7d?: number; views_30d?: number; media: Media[]; coverUrl?: string; externalUrl?: string; sourceUrl?: string; sourceLabel?: string };
-const tabs = ["今日精选", "人气参考", "最新"];
+const tabs = ["今日精选", "人气参考", "最新", "海外新作"];
 const types = ["全部", "工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
 const colors = ["#c9dbd1", "#efd6c4", "#d8d3ea", "#cadced", "#303b52", "#eadfb7"];
 const mediaSource = (media?: Media) => media ? `/api/media/file?key=${encodeURIComponent(media.object_key)}` : "";
@@ -99,7 +99,8 @@ export default function ProductBrowserHome() {
     fetch("/api/auth/session").then((response) => response.ok ? response.json() as Promise<{ user: { displayName: string } | null; isAdmin?: boolean }> : { user: null, isAdmin: false }).then((session) => { setUser(session.user || null); setIsAdmin(Boolean(session.isAdmin)); }).catch(() => undefined);
   }, []);
   const visible = useMemo(() => {
-    const filtered = products.filter((product) => (activeType === "全部" || product.type.includes(activeType)) && (!query || `${product.title} ${product.description} ${product.creator_name}`.toLowerCase().includes(query.toLowerCase())));
+    const sourceProducts = activeTab === "海外新作" ? [...todayIndependentProducts, ...independentProducts] : products;
+    const filtered = sourceProducts.filter((product) => (activeType === "全部" || product.type.includes(activeType)) && (!query || `${product.title} ${product.description} ${product.creator_name}`.toLowerCase().includes(query.toLowerCase())));
     const hotScore = (product: Product) => {
       const recent = productScore({ likes:product.likes_7d, favorites:product.favorites_7d, shares:product.shares_7d, share_opens:product.share_opens_7d });
       const month = productScore({ likes:product.likes_30d, favorites:product.favorites_30d, shares:product.shares_30d, share_opens:product.share_opens_30d });
@@ -107,6 +108,7 @@ export default function ProductBrowserHome() {
     };
     const strengthScore = (product: Product) => productScore(product);
     const sorted = [...filtered].sort((a, b) => {
+      if (activeTab === "海外新作") return 0;
       if (activeTab === "人气参考") return hotScore(b) - hotScore(a) || Date.parse(b.created_at) - Date.parse(a.created_at);
       if (activeTab === "最新") return Date.parse(b.created_at) - Date.parse(a.created_at);
       const aReady = a.status === "正在使用" ? 1 : 0, bReady = b.status === "正在使用" ? 1 : 0;
