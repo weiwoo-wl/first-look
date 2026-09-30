@@ -8,7 +8,7 @@ import AnnouncementTicker from "./components/announcement-ticker";
 
 type Media = { object_key: string; media_type: string };
 type Product = { slug: string; title: string; description: string; type: string; status: string; creator_name: string; creator_handle?: string; product_url?: string; created_at: string; likes: number; favorites: number; shares: number; share_opens?: number; share_opens_7d?: number; share_opens_30d?: number; views: number; likes_7d?: number; likes_30d?: number; favorites_7d?: number; favorites_30d?: number; shares_7d?: number; shares_30d?: number; views_7d?: number; views_30d?: number; media: Media[]; coverUrl?: string; externalUrl?: string; sourceUrl?: string; sourceLabel?: string };
-const tabs = ["今日精选", "人气参考", "最新", "海外新作"];
+const tabs = ["发现作品", "今日精选", "人气参考", "最新", "海外新作"];
 const types = ["全部", "工具", "小程序", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
 const colors = ["#c9dbd1", "#efd6c4", "#d8d3ea", "#cadced", "#303b52", "#eadfb7"];
 const mediaSource = (media?: Media) => media ? `/api/media/file?key=${encodeURIComponent(media.object_key)}` : "";
@@ -90,7 +90,7 @@ function ProductBrowser({ products, activeTab }: { products: Product[]; activeTa
 }
 
 export default function ProductBrowserHome() {
-  const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("今日精选"), [activeType, setActiveType] = useState("全部");
+  const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("发现作品"), [activeType, setActiveType] = useState("全部");
   const [user, setUser] = useState<{ displayName: string } | null>(null), [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true), [loadError, setLoadError] = useState(false);
   const [logoReveal, setLogoReveal] = useState(0);
@@ -99,7 +99,7 @@ export default function ProductBrowserHome() {
     fetch("/api/auth/session").then((response) => response.ok ? response.json() as Promise<{ user: { displayName: string } | null; isAdmin?: boolean }> : { user: null, isAdmin: false }).then((session) => { setUser(session.user || null); setIsAdmin(Boolean(session.isAdmin)); }).catch(() => undefined);
   }, []);
   const visible = useMemo(() => {
-    const sourceProducts = activeTab === "海外新作" ? [...todayIndependentProducts, ...independentProducts] : products;
+    const sourceProducts = activeTab === "海外新作" ? [...todayIndependentProducts, ...independentProducts] : activeTab === "发现作品" ? [...products, ...todayIndependentProducts, ...independentProducts] : products;
     const filtered = sourceProducts.filter((product) => (activeType === "全部" || product.type.includes(activeType)) && (!query || `${product.title} ${product.description} ${product.creator_name}`.toLowerCase().includes(query.toLowerCase())));
     const hotScore = (product: Product) => {
       const recent = productScore({ likes:product.likes_7d, favorites:product.favorites_7d, shares:product.shares_7d, share_opens:product.share_opens_7d });
