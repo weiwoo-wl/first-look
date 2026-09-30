@@ -1,5 +1,6 @@
 import { currentUser, runtime, sameOrigin } from "../../lib/auth";
 import { ensureAdminTables } from "../../lib/admin";
+import { ensureNotificationTable } from "../../lib/notifications";
 
 const reasons = new Set(["垃圾广告", "色情或暴力内容", "抄袭或侵权", "欺诈或虚假信息", "其他问题"]);
 
@@ -13,7 +14,8 @@ export async function POST(request: Request) {
   if (body.targetType !== "creation" || !targetId || !reasons.has(reason)) return Response.json({ error: "举报信息不完整" }, { status: 400 });
   if (body.detail && String(body.detail).length > 500) return Response.json({ error: "补充说明不能超过 500 个字" }, { status: 400 });
   await ensureAdminTables(db);
-  const product = await db.prepare("SELECT id,visibility FROM creations WHERE id=? AND visibility='published'").bind(Number(targetId)).first<{ id:number; visibility:string }>();
+  await ensureNotificationTable(db);
+  const product = await db.prepare("SELECT id,title,creator_id,visibility FROM creations WHERE id=? AND visibility='published'").bind(Number(targetId)).first<{ id:number; title:string; creator_id:string; visibility:string }>();
   if (!product) return Response.json({ error: "产品不存在或已经下架" }, { status: 404 });
   const duplicate = await db.prepare("SELECT id FROM site_reports WHERE reporter_id=? AND target_type=? AND target_id=? AND status='pending'").bind(user.id, "creation", targetId).first();
   if (duplicate) return Response.json({ error: "你已经举报过这个产品" }, { status: 409 });
@@ -21,6 +23,7 @@ export async function POST(request: Request) {
     db.prepare("INSERT INTO site_reports(reporter_id,target_type,target_id,reason,detail) VALUES(?,?,?,?,?)").bind(user.id, "creation", targetId, reason, String(body.detail || "").trim()),
     db.prepare("INSERT OR REPLACE INTO admin_hidden_creations(creation_id,previous_visibility,hidden_by,hidden_at) VALUES(?,?,?,CURRENT_TIMESTAMP)").bind(product.id, product.visibility, "report:" + user.id),
     db.prepare("UPDATE creations SET visibility='admin_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=? AND visibility='published'").bind(product.id),
+    db.prepare("INSERT INTO user_notifications(user_id,type,title,summary,url) VALUES(?,'product','产品暂时下架',?,'/account/products')").bind(product.creator_id,`你的产品《${product.title}》收到举报后已暂时下架，等待平台核实。`),
   ]);
   return Response.json({ ok: true, message: "举报已提交，产品已暂时下架等待审核" });
 }

@@ -1,6 +1,7 @@
 import { currentAdmin, logAdminAction } from "../../lib/admin";
 import { runtime, sameOrigin } from "../../lib/auth";
 import { ensureAnnouncementTable } from "../../lib/announcements";
+import { ensureNotificationTable } from "../../lib/notifications";
 
 export async function GET(request: Request) {
   const db = runtime().DB;
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return Response.json({ error: "公告格式无效" }, { status: 400 }); }
   if (!body || typeof body !== "object") return Response.json({ error: "公告格式无效" }, { status: 400 });
-  const id = body.id == null ? null : Number(body.id);
+  let id = body.id == null ? null : Number(body.id);
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const content = typeof body.content === "string" ? body.content.trim() : "";
   let url = typeof body.url === "string" ? body.url.trim() : "";
@@ -36,12 +37,24 @@ export async function POST(request: Request) {
     catch { return Response.json({ error: "链接必须是完整的 HTTP 或 HTTPS 地址" }, { status: 400 }); }
   }
   await ensureAnnouncementTable(db);
+  await ensureNotificationTable(db);
+  let shouldNotify = false;
   if (id !== null) {
-    if (!await db.prepare("SELECT id FROM site_announcements WHERE id=?").bind(id).first()) return Response.json({ error: "找不到这条公告" }, { status: 404 });
+    const previous = await db.prepare("SELECT status FROM site_announcements WHERE id=?").bind(id).first<{ status: string }>();
+    if (!previous) return Response.json({ error: "找不到这条公告" }, { status: 404 });
+    shouldNotify = status === "published" && previous.status !== "published";
     await db.prepare("UPDATE site_announcements SET title=?,content=?,url=?,status=?,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(title,content,url || null,status,admin.id,id).run();
   } else {
-    await db.prepare("INSERT INTO site_announcements(title,content,url,status,updated_by) VALUES(?,?,?,?,?)").bind(title,content,url || null,status,admin.id).run();
+    const inserted = await db.prepare("INSERT INTO site_announcements(title,content,url,status,updated_by) VALUES(?,?,?,?,?)").bind(title,content,url || null,status,admin.id).run();
+    id = Number(inserted.meta.last_row_id);
+    shouldNotify = status === "published";
   }
-  await logAdminAction(db,admin.id,"save_announcement","announcement",String(id ?? "new"),`${title} · ${status === "published" ? "已发布" : "已下架"}`);
-  return Response.json({ ok: true });
+  let notified = 0;
+  if (shouldNotify && id !== null) {
+    const result = await db.prepare("INSERT INTO user_notifications(user_id,type,title,summary,url) SELECT u.id,'announcement',?,?,? FROM users u JOIN site_notification_meta m ON m.id=1 WHERE u.disabled_at IS NULL AND ? > m.announcement_id_cutoff")
+      .bind(title,content,url || null,id).run();
+    notified = Number(result.meta.changes || 0);
+  }
+  await logAdminAction(db,admin.id,"save_announcement","announcement",String(id),`${title} · ${status === "published" ? "已发布" : "已下架"}`);
+  return Response.json({ ok: true, notified });
 }
