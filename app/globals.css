@@ -332,6 +332,7 @@ body {
   background: #efefeb;
   box-shadow: 0 24px 70px rgba(22, 22, 19, .07);
 }
+.home-footer { background: linear-gradient(180deg, #f7f7f4 0, #f4f4f0 96px); }
 .footer-directory { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(20px, 4vw, 56px); padding: 0 0 42px; }
 .footer-directory h2 { margin-bottom: 16px; color: #171717; font-size: 16px; font-weight: 600; }
 .footer-directory h2 a { transition: opacity .2s ease; }
