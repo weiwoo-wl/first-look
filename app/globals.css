@@ -637,6 +637,18 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
 .admin-metrics article { padding: 20px; border: 1px solid rgba(0,0,0,.1); border-radius: 10px; background: #fff; }
 .admin-metrics span { display: block; color: rgba(0,0,0,.48); font-size: 12px; }
 .admin-metrics strong { display: block; margin-top: 14px; font-size: 30px; line-height: 1; letter-spacing: -.05em; }
+.admin-dashboard-block { max-width: 1280px; margin: 24px auto; }
+.admin-dashboard-metrics { max-width: none; }
+.admin-dashboard-metrics small { display: block; margin-top: 10px; color: rgba(0,0,0,.45); font-size: 12px; }
+.admin-dashboard-panel { max-width: none; margin-top: 16px; }
+.admin-dashboard-chart { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 12px; height: 200px; padding: 18px 24px 8px; }
+.admin-dashboard-day { display: flex; flex-direction: column; align-items: center; min-width: 0; color: rgba(0,0,0,.58); font-size: 12px; }
+.admin-dashboard-bar-track { display: flex; flex: 1; align-items: flex-end; width: min(100%,56px); margin: 8px 0; background: #f1f1ed; border-radius: 6px; overflow: hidden; }
+.admin-dashboard-bar { width: 100%; background: #244840; border-radius: 6px 6px 0 0; }
+.admin-dashboard-note { padding: 12px 20px 18px; color: rgba(0,0,0,.48); font-size: 12px; }
+.admin-dashboard-engagement { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; padding: 22px; }
+.admin-dashboard-engagement span { display: block; color: rgba(0,0,0,.48); font-size: 12px; }
+.admin-dashboard-engagement strong { display: block; margin-top: 8px; font-size: 25px; }
 .admin-panel { max-width: 1280px; margin: 0 auto; overflow: hidden; border: 1px solid rgba(0,0,0,.1); border-radius: 10px; background: #fff; }
 .admin-panel > h2, .admin-panel-title { padding: 18px 20px; border-bottom: 1px solid rgba(0,0,0,.09); }
 .admin-panel h2 { font-size: 15px; font-weight: 650; }

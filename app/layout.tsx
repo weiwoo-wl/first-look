@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SiteVisitTracker from "./components/site-visit-tracker";
 
 export const metadata: Metadata = {
   title: "First Look | AI 创造，值得被看见",
@@ -20,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased"><SiteVisitTracker />{children}</body>
     </html>
   );
 }
