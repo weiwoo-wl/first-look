@@ -64,6 +64,19 @@ export function engagementPeriodColumns(days: 7 | 30, alias = "c") {
   return [["creation_events","liked","likes"],["creation_events","favorited","favorites"],["creation_shares",null,"shares"],["product_share_opens",null,"share_opens"]].map(([table,kind,name]) => `(SELECT COUNT(*) FROM ${table} e WHERE e.creation_id=${alias}.id${kind ? ` AND e.event_type='${kind}'` : ""} AND e.created_at>=datetime('now','-${days} days')) AS ${name}_${days}d`).join(",");
 }
 
+export function engagementYesterdayColumns(alias = "c") {
+  const start = "datetime('now','+8 hours','start of day','-1 day','-8 hours')";
+  const end = "datetime('now','+8 hours','start of day','-8 hours')";
+  const range = `e.created_at>=${start} AND e.created_at<${end}`;
+  return [
+    `(SELECT COUNT(*) FROM creation_events e WHERE e.creation_id=${alias}.id AND e.event_type='liked' AND ${range}) AS likes_yesterday`,
+    `(SELECT COUNT(*) FROM creation_events e WHERE e.creation_id=${alias}.id AND e.event_type='favorited' AND ${range}) AS favorites_yesterday`,
+    `(SELECT COUNT(*) FROM creation_shares e WHERE e.creation_id=${alias}.id AND ${range}) AS shares_yesterday`,
+    `(SELECT COUNT(*) FROM product_share_opens e WHERE e.creation_id=${alias}.id AND ${range}) AS share_opens_yesterday`,
+    `(SELECT COUNT(*) FROM creation_views e WHERE e.creation_id=${alias}.id AND ${range}) AS views_yesterday`,
+  ].join(",");
+}
+
 export function isKnownBot(request: Request) {
   return /bot\b|crawler|spider|preview|slurp|headless|facebookexternalhit|whatsapp|telegrambot|discordbot|bytespider|lighthouse/i.test(request.headers.get("User-Agent") || "") || /prefetch|prerender/i.test(request.headers.get("Purpose") || request.headers.get("Sec-Purpose") || "");
 }

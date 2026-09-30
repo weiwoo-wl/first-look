@@ -1,4 +1,4 @@
-import { engagementColumns, engagementPeriodColumns } from "../../lib/engagement";
+import { engagementColumns, engagementPeriodColumns, engagementYesterdayColumns } from "../../lib/engagement";
 import { normalizeResourceValue, normalizeTechnical, readTechnical } from "../../lib/technical";
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const media = await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]);
     return Response.json({ ...work, media, technical: await readTechnical(db,Number(work.id)) });
   }
-  const rows = await db.prepare(`SELECT c.id,c.slug,c.title,c.description,c.type,c.status,c.tags,c.product_url,c.creator_name,u.handle AS creator_handle,c.created_at,c.updated_at,${engagementColumns()},${engagementPeriodColumns(7)},${engagementPeriodColumns(30)} FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.visibility=\'published\' ORDER BY c.created_at DESC`).all();
+  const rows = await db.prepare(`SELECT c.id,c.slug,c.title,c.description,c.type,c.status,c.tags,c.product_url,c.creator_name,u.handle AS creator_handle,c.created_at,c.updated_at,${engagementColumns()},${engagementPeriodColumns(7)},${engagementPeriodColumns(30)},${engagementYesterdayColumns()} FROM creations c LEFT JOIN users u ON u.id=c.creator_id WHERE c.visibility=\'published\' ORDER BY c.created_at DESC`).all();
   const enriched = await Promise.all(rows.results.map(async (work) => ({ ...work, media: await db.prepare(mediaSql).bind(work.id).all().then(x=>x.results).catch(()=>[]) })));
   return Response.json(enriched, { headers: { "Cache-Control": "no-store" } });
 }
