@@ -390,7 +390,18 @@ body {
 @media (max-width: 900px) { .footer-directory { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; } }
 @media (max-width: 600px) { .footer-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .footer-directory { column-gap: 18px; } .footer-directory li, .footer-coming-soon { font-size: 14px; } }
-#top { padding-top: 32px; padding-bottom: 24px; }
+#top { position: relative; isolation: isolate; padding-top: 32px; padding-bottom: 24px; }
+#top::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -12px 0 -72px;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(23,23,23,.065) 1px, transparent 1px), linear-gradient(90deg, rgba(23,23,23,.065) 1px, transparent 1px);
+  background-size: 52px 52px;
+  -webkit-mask-image: radial-gradient(ellipse 62% 72% at 50% 53%, #000 12%, transparent 100%);
+  mask-image: radial-gradient(ellipse 62% 72% at 50% 53%, #000 12%, transparent 100%);
+}
 main > section:has(.product-browser-top) { padding-bottom: 40px; }
 main > section:has(.product-browser-top) > div[aria-label="作品分类"] { margin-bottom: 12px; }
 .product-hero-row { display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(340px, 1fr); align-items: center; gap: 32px; }
