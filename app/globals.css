@@ -329,10 +329,10 @@ body {
   overflow: hidden;
   border: 1px solid rgba(23, 23, 23, .085);
   border-radius: 24px;
-  background: #fbfbf9;
+  background: #fff;
   box-shadow: 0 2px 5px rgba(22, 22, 19, .035), 0 22px 48px rgba(22, 22, 19, .07), 0 48px 90px rgba(22, 22, 19, .045), inset 0 1px 0 rgba(255, 255, 255, .9);
 }
-.home-footer { background: linear-gradient(180deg, #f7f7f4 0, #f4f4f0 96px); }
+.home-footer { background: linear-gradient(180deg, #fafafa 0, #f6f7f8 96px); }
 .footer-directory { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(20px, 4vw, 56px); padding: 0 0 42px; }
 .footer-directory h2 { margin-bottom: 16px; color: #171717; font-size: 16px; font-weight: 600; }
 .footer-directory h2 a { transition: opacity .2s ease; }
