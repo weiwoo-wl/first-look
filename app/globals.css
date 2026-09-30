@@ -453,9 +453,15 @@ main > section:has(.product-browser-top) > div[aria-label="作品分类"] { marg
 .product-hero-logo { width: 100%; overflow: hidden; transition: clip-path .08s linear; }
 .product-hero-logo span { position: relative; display: block; width: max-content; color: transparent; background: url('/first-look-snow-mountain.png') center 48% / cover no-repeat; background-clip: text; -webkit-background-clip: text; font-family: "Bahnschrift SemiCondensed", "Arial Narrow", Arial, sans-serif; font-size: clamp(74px, 10vw, 164px); font-weight: 750; letter-spacing: -.12em; line-height: .92; white-space: nowrap; transform: scaleX(.8); transform-origin: left center; }
 .product-hero-logo span::after { position: absolute; inset: 0; content: attr(data-wordmark); color: transparent; background: linear-gradient(112deg, rgba(255,105,79,.12), rgba(244,182,77,.3) 24%, rgba(108,207,163,.25) 48%, rgba(107,156,255,.35) 72%, rgba(179,123,255,.2)); background-size: 220% 100%; background-clip: text; -webkit-background-clip: text; animation: first-look-spectrum 8s linear infinite; pointer-events: none; }
+.hero-koi { position: absolute; z-index: 2; left: 0; top: 0; width: 58px; height: 31px; pointer-events: none; offset-path: ellipse(45% 39% at 50% 50%); offset-anchor: center; offset-rotate: auto; animation: hero-koi-orbit 24s linear infinite; filter: drop-shadow(0 2px 2px rgba(28, 33, 38, .14)); }
+.hero-koi svg { display: block; width: 100%; height: 100%; }
+.hero-koi-tail { transform-origin: 22px 22px; animation: hero-koi-tail 1.1s ease-in-out infinite alternate; }
+.hero-koi.is-paused, .hero-koi.is-paused .hero-koi-tail { animation-play-state: paused; }
+@keyframes hero-koi-orbit { 0% { offset-distance: 0%; } 60% { offset-distance: 100%; } 100% { offset-distance: 100%; } }
+@keyframes hero-koi-tail { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
 @keyframes first-look-spectrum { to { background-position: 220% 0; } }
 @media (hover: none), (pointer: coarse) { .product-hero-logo { clip-path: none !important; } }
-@media (prefers-reduced-motion: reduce) { .product-hero-logo span::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .product-hero-logo span::after, .hero-koi, .hero-koi-tail { animation: none; } .hero-koi { left: auto; right: 3px; top: auto; bottom: 7px; offset-path: none; } }
 .product-browser-top { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 28px 30px 10px; }
 .product-browser-top h2 { font-size: 24px; font-weight: 650; letter-spacing: -.05em; }
 .product-browser-top p { margin-top: 5px; color: rgba(23,23,23,.5); font-size: 13px; }
