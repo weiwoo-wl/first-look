@@ -32,7 +32,7 @@ export default function ProductEntryAction({ value, type = "", className = "" }:
       <button type="button" className={style} onClick={(event) => { event.stopPropagation(); void copyEntry(); }}>
         {copied ? "已复制" : label}
       </button>
-      <span className="text-[11px] text-black/40">{copied ? (isMiniProgram ? "可前往微信打开" : "已复制") : isLink ? "分享内容中包含可打开的网址" : isMiniProgram ? "复制后到微信中打开" : `复制后在${resourceLinkTitle(value)}中打开`}</span>
+      <span className="text-[11px] text-black/40">{isLink ? "分享内容中包含可打开的网址" : isMiniProgram ? "发到微信聊天，点击链接打开" : copied ? "已复制" : `复制后在${resourceLinkTitle(value)}中打开`}</span>
     </div>
   );
 }
