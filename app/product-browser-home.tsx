@@ -176,7 +176,7 @@ export default function ProductBrowserHome() {
       <div className="mx-auto max-w-7xl">
         <div className="how-it-works-heading"><p>HOW IT WORKS</p><h2 id="how-it-works-title">让作品被发现，让创作继续发生</h2></div>
         <div className="how-it-works-grid">
-          <article className="how-it-works-card"><span aria-hidden="true">01</span><h3>持续推广作品</h3><p>网站持续运营和推广，让更多人有机会看到、试用这些作品。一个作品吸引来的用户，也可能发现其他喜欢的作品。</p></article>
+          <article className="how-it-works-card"><span aria-hidden="true">01</span><h3>持续推广作品</h3><p>网站持续运营和推广，让更多人有机会看到、试用这些作品，促进产品与产品、作者与作者之间互助。</p></article>
           <article className="how-it-works-card"><span aria-hidden="true">02</span><h3>把试用反馈带给作者</h3><p>用户试用后，可以把体验反馈给网站或作者。作者根据真实使用感受打磨产品，再把更新带给更多人。</p></article>
           <article className="how-it-works-card"><span aria-hidden="true">03</span><h3>把经验留给后来者</h3><p>网站汇集独立开发者的实战经验，让准备动手的人看见过程、少走弯路，也把自己的成果与经验分享出来。</p></article>
         </div>
