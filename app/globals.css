@@ -418,6 +418,9 @@ body {
 .footer-contribute:hover { color: #171717; }
 .footer-contact-link { display: inline-flex; align-items: center; gap: 5px; color: rgba(23,23,23,.58); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid rgba(23,23,23,.1); padding-top: 22px; color: rgba(23,23,23,.48); font-size: 12px; }
+.footer-legal { display: flex; flex-wrap: wrap; gap: 24px; }
+.footer-legal a { transition: color .2s ease; }
+.footer-legal a:hover { color: #171717; }
 @media (max-width: 900px) { .footer-directory { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; } }
 @media (max-width: 600px) { .footer-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .footer-directory { column-gap: 18px; } .footer-directory li, .footer-coming-soon { font-size: 14px; } }
