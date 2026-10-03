@@ -9,6 +9,7 @@ import HeroKoi from "./components/hero-koi";
 type Media = { object_key: string; media_type: string };
 type Product = { slug: string; title: string; description: string; type: string; status: string; creator_name: string; creator_handle?: string; product_url?: string; created_at: string; likes: number; favorites: number; shares: number; share_opens?: number; share_opens_7d?: number; share_opens_30d?: number; views: number; likes_7d?: number; likes_30d?: number; favorites_7d?: number; favorites_30d?: number; shares_7d?: number; shares_30d?: number; views_7d?: number; views_30d?: number; likes_yesterday?: number; favorites_yesterday?: number; shares_yesterday?: number; share_opens_yesterday?: number; views_yesterday?: number; media: Media[]; coverUrl?: string; externalUrl?: string; sourceUrl?: string; sourceLabel?: string };
 const tabs = ["发现作品", "今日精选", "人气参考", "最新", "海外新作"];
+const LATEST_ROTATION_INTERVAL_MS = 30 * 60 * 1000;
 const types = ["全部", "工具", "小程序", "APP", "网页", "视频", "数字人", "Skill", "图片", "音频", "实验", "其他"];
 const colors = ["#c9dbd1", "#efd6c4", "#d8d3ea", "#cadced", "#303b52", "#eadfb7"];
 const mediaSource = (media?: Media) => media ? `/api/media/file?key=${encodeURIComponent(media.object_key)}` : "";
@@ -103,6 +104,7 @@ function ProductBrowser({ products, activeTab }: { products: Product[]; activeTa
 
 export default function ProductBrowserHome() {
   const [products, setProducts] = useState<Product[]>([]), [query, setQuery] = useState(""), [activeTab, setActiveTab] = useState("发现作品"), [activeType, setActiveType] = useState("全部"), [categoryExpanded, setCategoryExpanded] = useState(false);
+  const [latestRotationSlot, setLatestRotationSlot] = useState(() => Math.floor(Date.now() / LATEST_ROTATION_INTERVAL_MS));
   const [user, setUser] = useState<{ displayName: string } | null>(null), [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true), [loadError, setLoadError] = useState(false);
   const [logoReveal, setLogoReveal] = useState(0);
@@ -122,6 +124,18 @@ export default function ProductBrowserHome() {
     window.addEventListener("scroll", updateHeader, { passive: true });
     return () => window.removeEventListener("scroll", updateHeader);
   }, []);
+  useEffect(() => {
+    if (activeTab !== "最新") return;
+    let timer: number;
+    const updateRotation = () => {
+      const now = Date.now();
+      const slot = Math.floor(now / LATEST_ROTATION_INTERVAL_MS);
+      setLatestRotationSlot(slot);
+      timer = window.setTimeout(updateRotation, (slot + 1) * LATEST_ROTATION_INTERVAL_MS - now + 20);
+    };
+    updateRotation();
+    return () => window.clearTimeout(timer);
+  }, [activeTab]);
   useEffect(() => {
     fetch("/api/creations", { cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<Product[]> : Promise.reject()).then((remote) => { setProducts(remote); setLoadError(false); }).catch(() => setLoadError(true)).finally(() => setLoading(false));
     fetch("/api/auth/session").then((response) => response.ok ? response.json() as Promise<{ user: { displayName: string } | null; isAdmin?: boolean }> : { user: null, isAdmin: false }).then((session) => { setUser(session.user || null); setIsAdmin(Boolean(session.isAdmin)); }).catch(() => undefined);
@@ -144,8 +158,12 @@ export default function ProductBrowserHome() {
       const aReady = a.status === "正在使用" ? 1 : 0, bReady = b.status === "正在使用" ? 1 : 0;
       return hotScore(b) - hotScore(a) || bReady - aReady || Date.parse(b.created_at) - Date.parse(a.created_at);
     });
+    if (activeTab === "最新" && sorted.length > 1) {
+      const offset = latestRotationSlot % sorted.length;
+      return [...sorted.slice(offset), ...sorted.slice(0, offset)];
+    }
     return sorted;
-  }, [products, activeTab, activeType, query]);
+  }, [products, activeTab, activeType, query, latestRotationSlot]);
   return <main className="min-h-dvh bg-[#fafafa] text-[#171717]">
     <header className={`sticky top-0 z-30 border-b transition-[background-color,border-color,box-shadow] duration-300 ${headerScrolled ? "border-black/10 bg-[#fafafa]/95 shadow-[0_8px_24px_rgba(0,0,0,0.035)] backdrop-blur" : "border-transparent bg-[#fafafa]"}`}><div className="mx-auto flex h-[68px] max-w-7xl items-center gap-2 px-2 sm:gap-7 sm:px-5 lg:px-8"><a href="#top" className="flex shrink-0 items-center gap-2.5" aria-label="First Look（一眼）首页"><img src="/koi-logo.png" alt="" className="h-8 w-8 object-contain" /><span className="flex flex-col gap-1 leading-none"><span className="text-[15px] font-bold tracking-[-0.05em]">FIRST LOOK</span><span className="text-[15px] font-bold tracking-[0.02em]">一眼</span></span></a><div className="ml-auto flex items-center gap-2 sm:gap-3">{isAdmin&&<a href="/admin" className="header-action hidden rounded-full border border-black/15 px-4 py-2 text-sm font-medium sm:block">管理后台</a>}<a href="/account" className="header-action shrink-0 rounded-full border border-[#111] bg-[#111] px-2 py-2 text-xs font-medium text-white hover:border-[#292929] hover:bg-[#292929] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111] focus-visible:ring-offset-2 sm:px-4 sm:text-sm">创作者中心</a>{user ? <a href="/account" className="header-action hidden max-w-36 truncate rounded-full border border-black/15 px-4 py-2 text-sm font-medium sm:block" title="打开账户设置">{user.displayName}</a> : <a href="/login" aria-label="注册或登录" className="header-action shrink-0 rounded-full border border-black/15 px-2 py-2 text-xs font-medium sm:px-4 sm:text-sm"><span className="sm:hidden">登录</span><span className="hidden sm:inline">注册／登录</span></a>}<a href="/create" className="header-action flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#111] px-2 py-2 text-xs font-medium text-white sm:gap-1.5 sm:px-4 sm:text-sm"><Sparkles size={14} />发布作品</a></div></div></header>
     <section id="top" className="mx-auto max-w-[1600px] px-5 pb-10 pt-12 lg:px-8 lg:pt-16"><div className="product-hero-row"><div className="product-hero-copy"><h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.065em] sm:text-5xl lg:text-[4rem]">每一个用 AI 创造的产品，<br /><span className="text-black/35">尤其是非专业创造者的产品，都有被发现的机会。</span></h1></div><div ref={logoZoneRef} className="product-hero-logo-zone" aria-label="First Look 彩色标志" onMouseMove={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); setLogoReveal((previous) => Math.max(previous, Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100)))); }}><div className="product-hero-logo" style={{ clipPath: `inset(0 ${100 - logoReveal}% 0 0)` }}><span data-wordmark="FIRST LOOK">FIRST LOOK</span></div>{logoReveal >= 95 && <HeroKoi paused={!logoInView} />}</div></div></section>
