@@ -167,7 +167,7 @@ export default function ProductBrowserHome() {
           </article>
           <article className="who-first-look-card">
             <div className="who-first-look-visual who-first-look-visual--ideas" aria-hidden="true"><svg viewBox="0 0 280 150"><path d="M107 98h66l-8 31h-50z" fill="#fff" stroke="#333" strokeWidth="3" strokeLinejoin="round"/><path d="M101 98h78" stroke="#333" strokeWidth="3" strokeLinecap="round"/><path d="M140 98V57" fill="none" stroke="#444" strokeWidth="4" strokeLinecap="round"/><path d="M139 78c-24 0-34-14-29-27 15-2 28 7 29 27Z" fill="#ddd" stroke="#333" strokeWidth="2.5" strokeLinejoin="round"/><path d="M141 68c1-22 15-31 29-27 3 13-7 26-29 27Z" fill="#fff" stroke="#333" strokeWidth="2.5" strokeLinejoin="round"/><path d="M120 89h40" stroke="#aaa" strokeWidth="2" strokeDasharray="3 5"/><path d="M86 74h14m-7-7v14m91-34h14m-7-7v14" stroke="#888" strokeWidth="2.5" strokeLinecap="round"/><circle cx="101" cy="48" r="3" fill="#777"/><circle cx="184" cy="91" r="4" fill="#555"/></svg></div>
-            <div className="who-first-look-copy"><h3>准备动手做产品</h3><p>别人在做什么？我能做吗？</p></div>
+            <div className="who-first-look-copy"><h3>新手创作者</h3><p>没有开发经验，借助新技术，把想法变成产品。</p></div>
           </article>
         </div>
       </div>
