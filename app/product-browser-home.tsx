@@ -172,6 +172,16 @@ export default function ProductBrowserHome() {
         </div>
       </div>
     </section>
+    <section className="how-it-works px-5 py-16 sm:py-20 lg:px-8" aria-labelledby="how-it-works-title">
+      <div className="mx-auto max-w-7xl">
+        <div className="how-it-works-heading"><p>HOW IT WORKS</p><h2 id="how-it-works-title">让作品被发现，让创作继续发生</h2></div>
+        <div className="how-it-works-grid">
+          <article className="how-it-works-card"><span aria-hidden="true">01</span><h3>持续推广作品</h3><p>网站持续运营和推广，让更多人有机会看到、试用这些作品。一个作品吸引来的用户，也可能发现其他喜欢的作品。</p></article>
+          <article className="how-it-works-card"><span aria-hidden="true">02</span><h3>把试用反馈带给作者</h3><p>用户试用后，可以把体验反馈给网站或作者。作者根据真实使用感受打磨产品，再把更新带给更多人。</p></article>
+          <article className="how-it-works-card"><span aria-hidden="true">03</span><h3>把经验留给后来者</h3><p>网站汇集独立开发者的实战经验，让准备动手的人看见过程、少走弯路，也把自己的成果与经验分享出来。</p></article>
+        </div>
+      </div>
+    </section>
 <footer className="home-footer px-5 pb-8 pt-12 text-sm text-black/70"><div className="mx-auto max-w-7xl"><nav className="footer-directory" aria-label="创作者工具箱"><section><h2><a href="/directory/experience">经验</a></h2><ul><li><a href="/directory/experience/website-launch">网站上线</a></li><li><a href="/directory/experience/filing">备案经历</a></li><li><a href="/directory/experience/product-publishing">产品发布</a></li><li><a href="/directory/experience/growth">运营推广</a></li><li><a href="/directory/experience/lessons">踩坑复盘</a></li></ul><details className="footer-contribute"><summary>欢迎投稿 <span aria-hidden="true">↗</span></summary><a href="mailto:server@firstlooklab.cn?subject=First%20Look%20%E7%BB%8F%E9%AA%8C%E6%8A%95%E7%A8%BF">server@firstlooklab.cn</a></details></section><section><h2><a href="/directory/tools">工具</a></h2><ul><li><a href="/directory/tools/skills">Skills</a></li><li><a href="/directory/tools/templates">模板</a></li></ul><details className="footer-contribute"><summary>欢迎投稿 <span aria-hidden="true">↗</span></summary><a href="mailto:server@firstlooklab.cn?subject=First%20Look%20%E5%B7%A5%E5%85%B7%E6%8A%95%E7%A8%BF">server@firstlooklab.cn</a></details></section><section><h2>资源</h2><p className="footer-coming-soon">敬请期待</p></section><section><h2>机会</h2><p className="footer-coming-soon">敬请期待</p></section><section><h2>联系我们</h2><a className="footer-contact-link" href="mailto:server@firstlooklab.cn">server@firstlooklab.cn <span aria-hidden="true">↗</span></a></section></nav><div className="footer-bottom"><span>© 2026 First Look</span></div></div></footer>
   </main>;
 }
